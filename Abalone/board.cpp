@@ -1,7 +1,8 @@
 #include "board.h"
+#include "game.h"
 
 
-board::board(float x, float y, float size, std::bitset<128U> boardState)
+board::board(float x, float y, float size, game* game, std::bitset<128U> boardState) : _game{game}
 {
 	this->boardState = boardState;
 	bg = slot::buildHexagon(x, y, size, sf::Color{ 165, 104, 24 });
@@ -28,12 +29,15 @@ void board::initAllSlots(float x, float y, float size) {
 		for (size_t j = 0; j < slotNumber; ++j) {
 			std::bitset<2U> slotState = boardState[stateIndex] << 1 | boardState[stateIndex + 1];
 			slot* s = new slot{ xinit, yinit, slotSize, slotState };
-			s->registerHandler(new std::function<void(sf::Event&)>{ [s](sf::Event e) {
+			s->registerHandler(new std::function<void(sf::Event&)>{ [&, s, stateIndex](sf::Event e) {
+				if (s->getState()[0] != _game->getIsBlackTurn())
+					return;
 				if (s->isSelected()) {
 					s->unSelect();
 				}
 				else {
-					s->select();
+					if(_game->trySelect(stateIndex >> 1))
+						s->select();
 				}
 			} });
 			slots.push_back(s);
@@ -70,8 +74,8 @@ void board::click(sf::Event & e)
 void board::show(sf::RenderWindow & window)
 {
 	window.draw(bg);
-	for (auto s : slots) {
-		s->show(window);
+	for (auto slot : slots) {
+		slot->show(window);
 	}
 }
 

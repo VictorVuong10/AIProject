@@ -3,6 +3,7 @@
 #include "IClickable.h"
 #include "slot.h"
 
+class game;
 class board : public IShowable, virtual public IClickable
 {
 public:
@@ -20,7 +21,7 @@ public:
 	ROW_A_I_NUMBER };
 
 	board() = default;
-	board(float x, float y, float size, std::bitset<128U> boardState = std::bitset<128U>(0));
+	board(float x, float y, float size, game* game, std::bitset<128U> boardState = std::bitset<128U>(0));
 	~board();
 	bool checkClick(sf::Event & e) override;
 	void click(sf::Event & e) override;
@@ -30,6 +31,7 @@ private:
 	std::bitset<128U> boardState;
 	sf::VertexArray bg;
 	std::vector<slot*> slots;
+	game* _game;
 	void initAllSlots(float x, float y, float size);
 };
 

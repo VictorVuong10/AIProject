@@ -2,13 +2,13 @@
 
 gui* gui::cur = nullptr;
 
-gui::gui() : callback{}, window{ sf::VideoMode(1000, 1000), "SFML works!" }
+gui::gui() : callback{}, window{ sf::VideoMode(1200, 800), "SFML works!" }
 {
 	window.setFramerateLimit(30);
 	cur = this;
 }
 
-gui::gui(game & game) : callback{}, window{ sf::VideoMode(1000, 1000), "SFML works!" }
+gui::gui(game & game) : callback{}, window{ sf::VideoMode(1200, 800), "SFML works!" }
 {
 	window.setFramerateLimit(30);
 }
@@ -18,7 +18,7 @@ gui::~gui()
 {
 }
 
-void gui::start()
+void gui::startBtn()
 {
 	using namespace std;
 	if (!loadAllResource()) {
@@ -31,27 +31,13 @@ void gui::start()
 	text.setString("hello");
 	text.setFillColor(sf::Color::Red);
 	text.setCharacterSize(24);
-
-	sf::Texture &normal = rman.getTexture("normalBtn");
-	sf::Texture clicked = rman.getTexture("clikcedBtn");
-
-	std::bitset<128U> state{ game::GERMAN_DAISY };
+	text.setPosition(900, 700);
+/*
+	std::bitset<128U> state{ game::GERMAN_DAISY_STR };
 
 	board b{ 500, 500, 300, state };
-
-	button* btn = new button{ &normal, &clicked, "xD", {200, 200} };
-	auto handler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
-		gui::cur->asyncAwait<int>([] {
-			std::this_thread::sleep_for(std::chrono::seconds{ 2 });
-			return 1;
-		}, [&](int i) {
-			std::cout << i << std::endl;
-			btn->setState(!btn->getVar());
-		});
-		std::bitset<128U> state{ game::STANDARD };
-		b.setState(state);
-	} };
-	btn->registerHandler(handler);
+*/
+	_game = new game{ false, false, game::BELGAIN_DAISY, this };
 
 	while (window.isOpen())
 	{
@@ -66,8 +52,8 @@ void gui::start()
 			if (event.type == sf::Event::MouseButtonPressed) {
 				std::cout << "mouse x: " << event.mouseButton.x << std::endl;
 				std::cout << "mouse y: " << event.mouseButton.y << std::endl;
-				btn->click(event);
-				b.click(event);
+				//btn->click(event);
+				_game->click(event);
 			}
 		}
 		auto now = std::chrono::system_clock::now();
@@ -80,12 +66,12 @@ void gui::start()
 
 
 		window.clear();
-		btn->show(std::ref(window));
-		b.show(std::ref(window));
+		//btn->show(std::ref(window));
+		_game->show(std::ref(window));
 		window.draw(text);
 		window.display();
 	}
-	delete btn;
+	//delete btn;
 }
 
 void gui::safePush(std::function<void()> cb) {

@@ -24,7 +24,7 @@ public:
 	gui();
 	explicit gui(game& game);
 	~gui();
-	void start();
+	void startBtn();
 	void safePush(std::function<void()> cb);
 	void executeCallback();
 	bool loadAllResource();
