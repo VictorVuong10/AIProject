@@ -2,13 +2,13 @@
 
 gui* gui::cur = nullptr;
 
-gui::gui() : callback{}, window{ sf::VideoMode(1200, 800), "SFML works!" }
+gui::gui() : callback{}, window{ sf::VideoMode(1200, 800), "ABALONE!" }
 {
 	window.setFramerateLimit(30);
 	cur = this;
 }
 
-gui::gui(game & game) : callback{}, window{ sf::VideoMode(1200, 800), "SFML works!" }
+gui::gui(game & game) : callback{}, window{ sf::VideoMode(1200, 800), "ABALONE" }
 {
 	window.setFramerateLimit(30);
 }
