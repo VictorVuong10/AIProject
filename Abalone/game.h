@@ -104,6 +104,11 @@ private:
 	void initLog();
 	void setTimer();
 
+	std::bitset<128U> moveHelper(int marbleCount, int index, int direction, int checkDirection, int secondCheckDirection);
+
+//	std::bitset<128U> inlineMove(int marbleCount, )
+
+
 	int MOVE_TABLE[61][6] =
 	{
 		//0 1ST ROW

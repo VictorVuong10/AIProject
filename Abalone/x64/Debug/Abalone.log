@@ -1,0 +1,3 @@
+﻿  game.cpp
+c:\users\victor\aiproject\abalone\game.cpp(541): warning C4715: 'game::move': not all control paths return a value
+  Abalone.vcxproj -> C:\Users\Victor\AIProject\x64\Debug\Abalone.exe
