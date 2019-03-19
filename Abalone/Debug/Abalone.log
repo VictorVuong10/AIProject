@@ -1,4 +1,0 @@
-﻿  board.cpp
-c:\projects\aiproject\abalone\board.cpp(30): warning C4805: '|': unsafe mix of type 'int' and type 'bool' in operation
-c:\projects\aiproject\abalone\board.cpp(57): warning C4805: '|': unsafe mix of type 'int' and type 'bool' in operation
-  Abalone.vcxproj -> C:\Projects\AIProject\Debug\Abalone.exe
