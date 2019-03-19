@@ -1,6 +1,8 @@
 ﻿#include "game.h"
 #include "gui.h"
 
+//std::string is readed backward into std::bitset
+
 /*
 		1010101010
 	   101010101010
@@ -13,7 +15,7 @@
 		0101010101
 */
 
-const std::string game::STANDARD_STR = "10101010101010101010100000101010000000000000000000000000000000000000000000000000000000000001010100000101010101010101010101";
+const std::string game::STANDARD_STR = "00000010101010101010101010100000101010000000000000000000000000000000000000000000000000000000000001010100000101010101010101010101";
 
 /*
 		0000000000
@@ -26,7 +28,7 @@ const std::string game::STANDARD_STR = "1010101010101010101010000010101000000000
 	   010100001010
 		0000000000
 */
-const std::string game::GERMAN_DAISY_STR = "00000000001010000001011010100001010100101000000101000000000000000000000001010000101000010101001010100101000010100000000000";
+const std::string game::GERMAN_DAISY_STR = "00000000000000001010000001011010100001010100101000000101000000000000000000000001010000101000010101001010100101000010100000000000";
 
 /*
 		1010000101
@@ -39,7 +41,7 @@ const std::string game::GERMAN_DAISY_STR = "000000000010100000010110101000010101
 	   010101101010
 		0101001010
 */
-const std::string game::BELGAIN_DAISY_STR = "10100001011010100101010010100001010000000000000000000000000000000000000000000000000000000101001010000101011010100101001010";
+const std::string game::BELGAIN_DAISY_STR = "00000010100001011010100101010010100001010000000000000000000000000000000000000000000000000000000101001010000101011010100101001010";
 
 
 const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, BELGAIN_DAISY_STR };
@@ -157,6 +159,7 @@ void game::initStartBtn()
 			startGame();
 		}
 	};
+
 	startBtn->registerHandler(handler);
 }
 
@@ -236,9 +239,9 @@ void game::initboardSetupBtn() {
 	boardSetupLabel.setFillColor(sf::Color::Red);
 	boardSetupLabel.setCharacterSize(25);
 	boardSetupLabel.setPosition(850, 50);
-	standardBtn = new button{ 70, "Standard", {1000, 100}, sf::Color::Green };
-	germanDaisyBtn = new button{ 70, "German Daisy", {1000, 140}, sf::Color::Green };
-	belgainDaisyBtn = new button{ 70, "Belgain Daisy", {1000, 180}, sf::Color::Green };
+	standardBtn = new button{ 70, "Standard", {1000, 100}, sf::Color{ 165, 104, 24 } };
+	germanDaisyBtn = new button{ 70, "German Daisy", {1000, 140}, sf::Color{ 165, 104, 24 } };
+	belgainDaisyBtn = new button{ 70, "Belgain Daisy", {1000, 180}, sf::Color{ 165, 104, 24 } };
 	standardBtn->getBackground().setSize({ 150, 35 });
 	germanDaisyBtn->getBackground().setSize({ 150, 35 });
 	belgainDaisyBtn->getBackground().setSize({ 150, 35 });
@@ -271,14 +274,14 @@ void game::initboardSetupBtn() {
 void game::initPlayerChangeBtn() {
 	sf::Font &arial = rman->getFont("arial");
 	playerChangeLabel.setFont(arial);
-	playerChangeLabel.setString("Change player: ");
+	playerChangeLabel.setString("Change playerS: ");
 	playerChangeLabel.setFillColor(sf::Color::Red);
 	playerChangeLabel.setCharacterSize(25);
 	playerChangeLabel.setPosition(950, 250);
-	player1ChangeBtn = new button{ 70, "Player1: Human", {1000, 300}, sf::Color::Green };
-	player2ChangeBtn = new button{ 70, "Player1: AI", {1000, 340}, sf::Color::Green };
-	player1ChangeBtn->getBackground().setSize({ 160, 35 });
-	player2ChangeBtn->getBackground().setSize({ 160, 35 });
+	player1ChangeBtn = new button{ 70, "Player1: Human", {1000, 300}, sf::Color{ 91, 44, 6 } };
+	player2ChangeBtn = new button{ 70, "Player1: AI", {1000, 340}, sf::Color{ 91, 44, 6 } };
+	player1ChangeBtn->getBackground().setSize({ 170, 35 });
+	player2ChangeBtn->getBackground().setSize({ 170, 35 });
 	auto player1ChangeHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
 			if (progress != gameProgress::NOT_STARTED)
 				return;

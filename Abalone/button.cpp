@@ -28,7 +28,7 @@ button::button(float size, std::string text, sf::Vector2f location, sf::Color co
 	Text.setString(text);
 	Text.setFillColor(sf::Color::White);
 	Text.setPosition(location.x + size * 0.1f, location.y + size / 2.f * 0.05f);
-	Text.setCharacterSize(size / 2 * 0.6);
+	Text.setCharacterSize(static_cast<unsigned int>(size / 2 * 0.6));
 }
 
 bool button::checkClick(sf::Event& e) {
