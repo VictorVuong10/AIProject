@@ -33,6 +33,7 @@ void board::initAllSlots(float x, float y, float size) {
 				if (s->getState()[0] != _game->getIsBlackTurn())
 					return;
 				if (s->isSelected()) {
+					_game->unSelect(stateIndex >> 1);
 					s->unSelect();
 				}
 				else {

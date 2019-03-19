@@ -161,12 +161,12 @@ void game::initStartBtn()
 }
 
 void game::startGame() {
+	if (state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
+		return;
+	}
 	if (gameProgress::NOT_STARTED == progress) {
 		gameState toBeSaved = { player1IsHuman, player2IsHuman, state, storedSec, isBlackTurn };
 		history.push(toBeSaved);
-	}
-	if (state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
-		return;
 	}
 	progress = gameProgress::IN_PROGRESS;
 	clock.restart();
@@ -179,6 +179,8 @@ void game::initPauseBtn()
 	{ 
 		[&, this](sf::Event& e) 
 		{
+			if (progress != gameProgress::IN_PROGRESS)
+				return;
 			this->progress = gameProgress::PAUSED;
 			this->storedSec += this->clock.getElapsedTime().asSeconds();
 		}
@@ -396,4 +398,8 @@ bool game::getIsBlackTurn() {
 bool game::trySelect(int index) {
 	selectedIndex.push_back(index);
 	return true;
+}
+
+void game::unSelect(int index) {
+	selectedIndex.erase(std::find(selectedIndex.begin(), selectedIndex.end(), index));
 }

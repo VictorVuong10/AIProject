@@ -55,6 +55,8 @@ public:
 
 	bool trySelect(int index);
 
+	void unSelect(int index);
+
 	~game();
 
 private:
