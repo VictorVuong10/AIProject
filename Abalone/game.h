@@ -24,12 +24,13 @@ public:
 	static const std::string GERMAN_DAISY_STR;
 	static const std::string BELGAIN_DAISY_STR;
 
-	static const std::string INIT_STATES[3];
+	static const std::string INIT_STATES[4];
 
 	typedef enum {
-		STANDARD = 0,
-		GERMAN_DAISY = 1,
-		BELGAIN_DAISY = 2
+		EMPTY = 0,
+		STANDARD = 1,
+		GERMAN_DAISY = 2,
+		BELGAIN_DAISY = 3
 	} initialState;
 
 	typedef enum {
@@ -42,7 +43,7 @@ public:
 	} gameProgress;
 
 	game();
-	game(bool player1IsHuman, bool player2IsHuman, initialState initialState, gui* gui);
+	game(gui* gui);
 
 	void registerHandler(handler h) = delete;
 	void removeHandler(handler h) = delete;
@@ -53,6 +54,8 @@ public:
 	bool getIsBlackTurn();
 
 	bool trySelect(int index);
+
+	void unSelect(int index);
 
 	~game();
 
@@ -65,7 +68,15 @@ private:
 	button* startBtn;
 	button* pauseBtn;
 	button* undoBtn;
+	button* resetBtn;
+	button* standardBtn;
+	button* germanDaisyBtn;
+	button* belgainDaisyBtn;
+	button* player1ChangeBtn;
+	button* player2ChangeBtn;
 	button* moveBtn[6];
+	sf::Text boardSetupLabel;
+	sf::Text playerChangeLabel;
 	sf::Text timerText;
 	sf::Text blackLostText;
 	sf::Text whiteLostText;
@@ -79,11 +90,15 @@ private:
 	float storedSec;
 
 	void initAllEle();
+	void initboardSetupBtn();
+	void initPlayerChangeBtn();
 	void initBoard();
 	void initTimer();
 	void initStartBtn();
+	void startGame();
 	void initPauseBtn();
 	void initUndoBtn();
+	void initResetBtn();
 	void initScore();
 	void initMoveBtn();
 	void initLog();

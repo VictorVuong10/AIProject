@@ -42,20 +42,32 @@ const std::string game::GERMAN_DAISY_STR = "000000000010100000010110101000010101
 const std::string game::BELGAIN_DAISY_STR = "10100001011010100101010010100001010000000000000000000000000000000000000000000000000000000101001010000101011010100101001010";
 
 
-const std::string game::INIT_STATES[3] = { STANDARD_STR, GERMAN_DAISY_STR, BELGAIN_DAISY_STR };
+const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, BELGAIN_DAISY_STR };
 
 
-game::game()
+game::game() : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
+	progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }
 {
+	initAllEle();
 }
 
-game::game(bool player1IsHuman, bool player2IsHuman, initialState initialState, gui* ui)
-	: player1IsHuman{ player1IsHuman }, player2IsHuman{ player2IsHuman }, state{ INIT_STATES[initialState] },
+game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}
 {
 	initAllEle();
 }
 
+game::~game()
+{
+	delete gameBoard;
+	delete startBtn;
+	delete pauseBtn;
+	delete undoBtn;
+	delete resetBtn;
+	for (auto b : moveBtn) {
+		delete b;
+	}
+}
 
 bool game::checkClick(sf::Event &)
 {
@@ -66,13 +78,19 @@ void game::click(sf::Event & e)
 {
 	if (progress == gameProgress::IN_PROGRESS) {
 		gameBoard->click(e);
+		for (auto b : moveBtn) {
+			b->click(e);
+		}
 	}
 	startBtn->click(e);
 	pauseBtn->click(e);
 	undoBtn->click(e);
-	for (auto b : moveBtn) {
-		b->click(e);
-	}
+	resetBtn->click(e);
+	standardBtn->click(e);
+	germanDaisyBtn->click(e);
+	belgainDaisyBtn->click(e);
+	player1ChangeBtn->click(e);
+	player2ChangeBtn->click(e);
 }
 
 void game::show(sf::RenderWindow & window)
@@ -81,6 +99,14 @@ void game::show(sf::RenderWindow & window)
 	gameBoard->show(window);
 	pauseBtn->show(window);
 	undoBtn->show(window);
+	resetBtn->show(window);
+	standardBtn->show(window);
+	germanDaisyBtn->show(window);
+	belgainDaisyBtn->show(window);
+	player1ChangeBtn->show(window);
+	player2ChangeBtn->show(window);
+	window.draw(boardSetupLabel);
+	window.draw(playerChangeLabel);
 	window.draw(blackLostText);
 	window.draw(whiteLostText);
 	setTimer();
@@ -91,11 +117,6 @@ void game::show(sf::RenderWindow & window)
 	/*window.draw(log);*/
 }
 
-
-game::~game()
-{
-}
-
 void game::initAllEle()
 {
 	initBoard();
@@ -103,6 +124,9 @@ void game::initAllEle()
 	initStartBtn();
 	initPauseBtn();
 	initUndoBtn();
+	initResetBtn();
+	initboardSetupBtn();
+	initPlayerChangeBtn();
 	initMoveBtn();
 	initScore();
 	initLog();
@@ -117,9 +141,10 @@ void game::initTimer()
 {
 	sf::Font &arial = rman->getFont("arial");
 	timerText.setFont(arial);
-	timerText.setString("Timer: 000:00");
+	timerText.setString("Timer: 0:0");
 	timerText.setFillColor(sf::Color::Red);
-	timerText.setCharacterSize(24);
+	timerText.setCharacterSize(50);
+	timerText.setPosition(450, 0);
 }
 
 void game::initStartBtn()
@@ -127,17 +152,24 @@ void game::initStartBtn()
 	startBtn = new button{ 100, "start", {50, 100}, sf::Color::Red };
 	auto handler = new std::function<void(sf::Event&)>
 	{ 
-		[&, this](sf::Event& e) 
+		[&](sf::Event& e) 
 		{
-			if (gameProgress::NOT_STARTED == progress) {
-				gameState toBeSaved = { player1IsHuman, player2IsHuman, state, storedSec + clock.getElapsedTime().asSeconds(), isBlackTurn };
-				history.push(toBeSaved);
-			}
-			this->progress = gameProgress::IN_PROGRESS;
-			this->clock.restart();
+			startGame();
 		}
 	};
 	startBtn->registerHandler(handler);
+}
+
+void game::startGame() {
+	if (state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
+		return;
+	}
+	if (gameProgress::NOT_STARTED == progress) {
+		gameState toBeSaved = { player1IsHuman, player2IsHuman, state, storedSec, isBlackTurn };
+		history.push(toBeSaved);
+	}
+	progress = gameProgress::IN_PROGRESS;
+	clock.restart();
 }
 
 void game::initPauseBtn()
@@ -147,6 +179,8 @@ void game::initPauseBtn()
 	{ 
 		[&, this](sf::Event& e) 
 		{
+			if (progress != gameProgress::IN_PROGRESS)
+				return;
 			this->progress = gameProgress::PAUSED;
 			this->storedSec += this->clock.getElapsedTime().asSeconds();
 		}
@@ -162,13 +196,107 @@ void game::initUndoBtn()
 				return;
 			history.pop();
 			gameState lastState = history.top();
-			gameBoard->setState(lastState.state);
+			state = lastState.state;
+			gameBoard->setState(state);
 			storedSec = lastState.storedSec;
 			isBlackTurn = lastState.isBlackTurn;
 			clock.restart();
 		}
 	};
 	undoBtn->registerHandler(handler);
+}
+
+void game::initResetBtn() {
+	resetBtn = new button{ 100, "reset", {50, 280}, sf::Color::Red };
+	auto handler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
+			if (progress == gameProgress::NOT_STARTED)
+				return;
+			progress = gameProgress::NOT_STARTED;
+			history = {};
+			state = std::bitset<128U>{ INIT_STATES[EMPTY] };
+			gameBoard->setState(state);
+			player1IsHuman = true;
+			player2IsHuman = false;
+			selectedIndex = {};
+			storedSec = 0;
+			isBlackTurn = true;
+			timerText.setString("Timer: 0:0");
+			blackLostText.setString("Black Lost: 0");
+			whiteLostText.setString("White Lost: 0");
+		}
+	};
+	resetBtn->registerHandler(handler);
+}
+
+
+void game::initboardSetupBtn() {
+	sf::Font &arial = rman->getFont("arial");
+	boardSetupLabel.setFont(arial);
+	boardSetupLabel.setString("Choose board initial setup: ");
+	boardSetupLabel.setFillColor(sf::Color::Red);
+	boardSetupLabel.setCharacterSize(25);
+	boardSetupLabel.setPosition(850, 50);
+	standardBtn = new button{ 70, "Standard", {1000, 100}, sf::Color::Green };
+	germanDaisyBtn = new button{ 70, "German Daisy", {1000, 140}, sf::Color::Green };
+	belgainDaisyBtn = new button{ 70, "Belgain Daisy", {1000, 180}, sf::Color::Green };
+	standardBtn->getBackground().setSize({ 150, 35 });
+	germanDaisyBtn->getBackground().setSize({ 150, 35 });
+	belgainDaisyBtn->getBackground().setSize({ 150, 35 });
+	auto standardHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
+			if (progress != gameProgress::NOT_STARTED)
+				return;
+			state = std::bitset<128U>{ INIT_STATES[STANDARD] };
+			gameBoard->setState(state);
+		}
+	};
+	standardBtn->registerHandler(standardHandler);
+	auto germanDaisyHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
+			if (progress != gameProgress::NOT_STARTED)
+				return;
+			state = std::bitset<128U>{ INIT_STATES[GERMAN_DAISY] };
+			gameBoard->setState(state);
+		}
+	};
+	germanDaisyBtn->registerHandler(germanDaisyHandler);
+	auto belgainDaisyHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
+			if (progress != gameProgress::NOT_STARTED)
+				return;
+			state = std::bitset<128U>{ INIT_STATES[BELGAIN_DAISY] };
+			gameBoard->setState(state);
+		}
+	};
+	belgainDaisyBtn->registerHandler(belgainDaisyHandler);
+}
+
+void game::initPlayerChangeBtn() {
+	sf::Font &arial = rman->getFont("arial");
+	playerChangeLabel.setFont(arial);
+	playerChangeLabel.setString("Change player: ");
+	playerChangeLabel.setFillColor(sf::Color::Red);
+	playerChangeLabel.setCharacterSize(25);
+	playerChangeLabel.setPosition(950, 250);
+	player1ChangeBtn = new button{ 70, "Player1: Human", {1000, 300}, sf::Color::Green };
+	player2ChangeBtn = new button{ 70, "Player1: AI", {1000, 340}, sf::Color::Green };
+	player1ChangeBtn->getBackground().setSize({ 160, 35 });
+	player2ChangeBtn->getBackground().setSize({ 160, 35 });
+	auto player1ChangeHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
+			if (progress != gameProgress::NOT_STARTED)
+				return;
+			player1IsHuman = !player1IsHuman;
+			std::string str = player1IsHuman ? "Human" : "AI";
+			player1ChangeBtn->getText()->setString("Player1: " + str);
+		}
+	};
+	player1ChangeBtn->registerHandler(player1ChangeHandler);
+	auto player2ChangeHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
+			if (progress != gameProgress::NOT_STARTED)
+				return;
+			player2IsHuman = !player2IsHuman;
+			std::string str = player2IsHuman ? "Human" : "AI";
+			player2ChangeBtn->getText()->setString("Player2: " + str);
+		}
+	};
+	player2ChangeBtn->registerHandler(player2ChangeHandler);
 }
 
 void game::initScore()
@@ -247,13 +375,9 @@ void game::setTimer() {
 		auto time = clock.getElapsedTime();
 		auto second = time.asSeconds();
 		float tempSec = storedSec + second;
-		int hour = static_cast<int>(tempSec) / 60;
+		int min = static_cast<int>(tempSec) / 60;
 		int sec = static_cast<int>(tempSec) % 60;
-		auto tempHourStr = std::to_string(hour);
-		auto tempSecStr = std::to_string(sec);
-		auto hourStr = std::string(3 - tempHourStr.length(), '0').append(tempHourStr);
-		auto secStr = std::string(2 - tempSecStr.length(), '0').append(tempSecStr);
-		timerText.setString("Timer: " + hourStr + ":" + secStr);
+		timerText.setString("Timer: " + std::to_string(min) + ":" + std::to_string(sec));
 	}
 }
 
@@ -274,4 +398,8 @@ bool game::getIsBlackTurn() {
 bool game::trySelect(int index) {
 	selectedIndex.push_back(index);
 	return true;
+}
+
+void game::unSelect(int index) {
+	selectedIndex.erase(std::find(selectedIndex.begin(), selectedIndex.end(), index));
 }

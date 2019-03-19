@@ -16,6 +16,7 @@ gui::gui(game & game) : callback{}, window{ sf::VideoMode(1200, 800), "ABALONE" 
 
 gui::~gui()
 {
+	delete _game;
 }
 
 void gui::startBtn()
@@ -37,7 +38,7 @@ void gui::startBtn()
 
 	board b{ 500, 500, 300, state };
 */
-	_game = new game{ false, false, game::BELGAIN_DAISY, this };
+	_game = new game{ this };
 
 	while (window.isOpen())
 	{
