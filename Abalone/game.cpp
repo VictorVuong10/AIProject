@@ -345,7 +345,7 @@ void game::initMoveBtn() {
 	for (int i = 0; i < 6; ++i) {
 		moveBtn[i]->getBackground().setSize({ 60, 50 });
 		auto handler = new std::function<void(sf::Event&)>{ [&, i](sf::Event& e) {
-			ui->asyncAwait<std::bitset<128U>>([&, i] {
+			/*ui->asyncAwait<std::bitset<128U>>([&, i] {
 				
 				std::bitset<128U> nstate{ game::STANDARD_STR };
 				int minIndex = 62;
@@ -360,14 +360,81 @@ void game::initMoveBtn() {
 				std::this_thread::sleep_for(std::chrono::seconds{ 2 });
 				return nstate << (i * 2);
 			}, [&](std::bitset<128U> state) {
-				if (gameProgress::IN_PROGRESS != progress)
-					return;
+				
 				nextState(state);
-			});			
+			});		*/
+			
+			bool moveType = isSideMove(i);
+			bool valid = moveType ? isSideMoveValid(i) : isInlineValid(i);
+			if (valid) {
+				auto action = makeAction(i, moveType);
+				std::cout << "count: " <<action.count << " index: " << action.index << " direction: " << action.direction << std::endl;
+			}
+			
 		} };
 		moveBtn[i]->registerHandler(handler);
 	}
 }
+
+game::gameAction game::makeAction(unsigned short direction, bool isSideMove) {
+	if (isSideMove) {
+		int drrR = (direction + 5) % 6;
+		bool isHighR = CLOCKWISE_RIGHT[direction][drrR];
+		int iR = isHighR ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
+		int iRNext = MOVE_TABLE[iR][drrR];
+		if (!(state[iRNext << 1] | state[iRNext << 1] + 1))
+			return { static_cast<int>(selectedIndex.size()), iR, direction };
+		int drr = (direction + 4) % 6;
+		bool isHigh = CLOCKWISE_RIGHT[direction][drr];
+		int i = isHigh ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
+		return { static_cast<int>(selectedIndex.size()), i, direction };
+	}
+	else {
+		int index = direction < 3 ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
+		return { 1, index, direction };
+	}
+}
+
+//false inline, true sidemove
+bool game::isSideMove(unsigned short direction) {
+	int smallest = selectedIndex[0];
+	for (int i = 0; i < 6; ++i) {
+		if (MOVE_TABLE[smallest][i] == selectedIndex[1])
+			return !(i == direction || (i + 3) % 6 == direction);
+	}
+	throw "inlvaid move";
+}
+
+bool game::isActionValid(unsigned short direction, bool isSideMove) {
+	return isSideMove ? isSideMoveValid(direction) : isInlineValid(direction);
+}
+
+bool game::isInlineValid(unsigned short direction) {
+	int first = direction < 3 ? *selectedIndex.begin() : *(selectedIndex.end() - 1);
+	int next = MOVE_TABLE[first][direction];
+	int checkCount = 0;
+	do {
+		auto nextState = state[next << 1] << 1 | state[(next << 1) + 1];
+		if (!nextState)
+			return true;
+		if (nextState == 2)
+			return false;
+		next = MOVE_TABLE[first][direction];
+	} while (checkCount < selectedIndex.size());
+	return false;
+
+}
+
+bool game::isSideMoveValid(unsigned short direction) {
+	for (auto index : selectedIndex) {
+		int next = MOVE_TABLE[index][direction];
+		if (state[next << 1] | state[(next << 1) + 1]) {
+			return false;
+		}
+	}
+	return true;
+}
+
 
 void game::initLog()
 {
@@ -384,8 +451,235 @@ void game::setTimer() {
 	}
 }
 
-std::bitset<128U> game::move(int direction) {
-	return std::bitset<128U>{};
+bool isBlackPiece(int index, std::bitset<128U> state) {
+		return (state[(index * 2) + 0] == 0 && state[(index * 2) + 1] == 1);
+}
+
+bool isWhitePiece(int index, std::bitset<128U> state) {
+	return (state[(index * 2) + 0] == 1 && state[(index * 2) + 1] == 0);
+}
+
+bool isEmpty(int index, std::bitset<128U> state) {
+	return (state[(index * 2) + 0] == 0 && state[(index * 2) + 1] == 0);
+}
+
+std::bitset<128U> game::moveHelper(int marbleCount, int index, int direction, int checkDirection, int secondCheckDirection) {
+
+	int storedIndex = index;
+
+	//if (MOVE_TABLE[index][direction] == -1) {
+
+	//checkDirection = to check what position the marbles are in i.e 3 marbles in a line downrightwards or in a line downleftward
+//	int checkDirection = 4;
+
+	for (int i = 0; i < marbleCount; i++) {
+
+		int checkIndex = MOVE_TABLE[index][direction];
+		//4 = downRight
+
+		//if (marbleCount > 0) {
+			//checkIndex =
+		//}
+
+		//probably should add a helper method for isBlack piece, is white peice, and is null
+		//that takes in 2 ints and checks the state to see if it is ... peice
+
+
+		std::cout << "checkIndex: " << checkIndex << "\n";
+
+		std::cout << "STATEcheckIndex: " << state[(checkIndex * 2) + 0] << "\n";
+
+		std::cout << "STATEcheckIndex: " << state[(checkIndex * 2) + 1] << "\n";
+
+		std::wcout << "a fucking bool" << (state[(checkIndex * 2) + 0] != 0 && state[(checkIndex * 2) + 1] != 0) << "\n";
+
+		std::wcout << "a fucking bool first bit :" << (state[(checkIndex * 2) + 0] != 0) << "\n";
+
+		std::wcout << "a fucking bool second bit :" << (state[(checkIndex * 2) + 1] != 0) << "\n";
+
+		if (!isEmpty) {
+			//i think 01 = black
+			std::cout << "yes2.0";
+
+
+			if (i == 1 
+				&& ((isBlackTurn && isBlackPiece(checkIndex, state)) 
+				|| (!isBlackTurn && isWhitePiece(checkIndex, state)))
+				) {
+				checkDirection = secondCheckDirection;
+				//index of the 2nd marble 
+				index = MOVE_TABLE[storedIndex][checkDirection];
+
+				std::cout << "yes";
+
+				checkIndex = MOVE_TABLE[index][direction];
+				if (!isEmpty) {
+					return state;
+				}
+
+				std::cout << "good";
+			}
+
+			//didnt calculate white scenario yet.
+
+			else {
+				return state;
+			}
+
+		}
+
+		//just so index doesnt become -1 but i dont think this matters?
+		if (i != marbleCount - 1)
+			index = MOVE_TABLE[index][checkDirection];
+
+	}
+
+	//if it exist after for loop then it is validated
+
+	std::bitset<128U> newState = state;
+
+	if (isBlackTurn) {
+		//instead of first index i could go backwards but i dont really want to atm,
+		for (int i = 0; i < marbleCount; i++) {
+			newState.set((storedIndex * 2) + 0, 0);
+			newState.set((storedIndex * 2) + 1, 0);
+			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 0, 0);
+			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 1, 1);
+
+			//just so index does not become -1 but i dont think this matters.
+			if (i < marbleCount - 1)
+				storedIndex = MOVE_TABLE[storedIndex][checkDirection];
+		}
+	}
+	else {
+		for (int i = 0; i < marbleCount; i++) {
+			newState.set((storedIndex * 2) + 0, 0);
+			newState.set((storedIndex * 2) + 1, 0);
+			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 0, 1);
+			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 1, 0);
+
+			if (i < marbleCount - 1)
+				storedIndex = MOVE_TABLE[storedIndex][checkDirection];
+
+		}
+	}
+
+
+	return newState;
+
+
+}
+
+
+
+
+
+
+std::bitset<128U> game::move(int marbleCount, int index, int direction) {
+
+	std::cout << marbleCount << " asdasd : " << index << "asdasd \n";
+
+	if (marbleCount == 1) {
+		
+		int initialIndex = index;
+
+		if (isBlackTurn) {
+			
+			int blackMarbleCount = 0;
+
+			//index is the index to check
+
+			while (isBlackPiece(index, state)) {
+				blackMarbleCount++;
+				index = MOVE_TABLE[index][direction];
+			}
+
+			if (blackMarbleCount > 3) {
+				return state;
+			}
+
+			if (isEmpty(index, state)) {
+				std::bitset<128U> newState = state;
+
+				newState.set((initialIndex * 2) + 0, 0);
+				newState.set((initialIndex * 2) + 1, 0);
+				newState.set((index * 2) + 0, 0);
+				newState.set((index * 2) + 1, 1);
+
+				return newState;
+			}
+
+			//stil have to do the part where the marbles push each other.
+
+
+		}
+		else {
+			//white scenario
+
+			int whiteMarbleCount = 0;
+
+			//index is the index to check
+
+			while (isBlackPiece(index, state)) {
+				whiteMarbleCount++;
+				index = MOVE_TABLE[index][direction];
+			}
+
+			if (whiteMarbleCount > 3) {
+				return state;
+			}
+
+			if (isEmpty(index, state)) {
+				std::bitset<128U> newState = state;
+
+				newState.set((initialIndex * 2) + 0, 0);
+				newState.set((initialIndex * 2) + 1, 0);
+				newState.set((index * 2) + 0, 1);
+				newState.set((index * 2) + 1, 0);
+
+				return newState;
+			}
+
+			//pushing case here
+
+		}
+
+	}
+
+	else {
+
+		if (direction == 0) {
+
+			//4 is the check direction, 5 is the second possible check direction
+			return moveHelper(marbleCount, index, direction, 4, 5);
+
+		} else if (direction == 1) {
+
+			//4 is the check direction, 5 is the second possible check direction
+			return moveHelper(marbleCount, index, direction, 5, 1);
+
+		} else if (direction == 2) {
+
+			//4 is the check direction, 5 is the second possible check direction
+			return moveHelper(marbleCount, index, direction, 4, 3);
+
+		} else if (direction == 3) {
+
+			//4 is the check direction, 5 is the second possible check direction
+			return moveHelper(marbleCount, index, direction, 5, 4);
+
+		} else if (direction == 4) {
+
+			//4 is the check direction, 5 is the second possible check direction
+			return moveHelper(marbleCount, index, direction, 2, 3);
+
+		}
+		//direction == 5 i probably shoulda done a switch statement but screw it.
+		return moveHelper(marbleCount, index, direction, 3, 4);
+
+	}
+
+	
 }
 
 void game::nextState(std::bitset<128U> state) {
@@ -399,10 +693,35 @@ bool game::getIsBlackTurn() {
 }
 
 bool game::trySelect(int index) {
-	selectedIndex.push_back(index);
+	bool selected = false;
+
+	switch (selectedIndex.size()) {
+	case 0: {
+		selectedIndex.push_back(index);
+		break;
+	}
+	case 1: {
+		for (int i = 0; i < 6; ++i) {
+			if (MOVE_TABLE[index][i] == selectedIndex[0]) {
+				selectedIndex.push_back(index);
+				selected = true;
+			}
+		}
+		if (!selected)
+			return selected;
+		break;
+	}
+	case 2:
+		selectedIndex.push_back(index);
+		break;
+	default:
+		return false;
+	}
+	std::sort(selectedIndex.begin(), selectedIndex.end());
 	return true;
 }
 
 void game::unSelect(int index) {
 	selectedIndex.erase(std::find(selectedIndex.begin(), selectedIndex.end(), index));
+	std::sort(selectedIndex.begin(), selectedIndex.end());
 }
