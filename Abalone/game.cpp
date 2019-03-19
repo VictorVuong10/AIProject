@@ -381,12 +381,16 @@ void game::setTimer() {
 	}
 }
 
-bool isBlackPiece(int bitIndex1, int bitIndex2, std::bitset<128U> state) {
-		return (state[bitIndex1] == 0 && state[bitIndex1] == 1);
+bool isBlackPiece(int index, std::bitset<128U> state) {
+		return (state[(index * 2) + 0] == 0 && state[(index * 2) + 1] == 1);
 }
 
-bool isWhitePiece(int bitIndex1, int bitIndex2, std::bitset<128U> state) {
-	return (state[bitIndex1] == 1 && state[bitIndex1] == 0);
+bool isWhitePiece(int index, std::bitset<128U> state) {
+	return (state[(index * 2) + 0] == 1 && state[(index * 2) + 1] == 0);
+}
+
+bool isEmpty(int index, std::bitset<128U> state) {
+	return (state[(index * 2) + 0] == 0 && state[(index * 2) + 1] == 0);
 }
 
 std::bitset<128U> game::moveHelper(int marbleCount, int index, int direction, int checkDirection, int secondCheckDirection) {
@@ -423,14 +427,14 @@ std::bitset<128U> game::moveHelper(int marbleCount, int index, int direction, in
 
 		std::wcout << "a fucking bool second bit :" << (state[(checkIndex * 2) + 1] != 0) << "\n";
 
-		if (state[(checkIndex * 2) + 0] != 0 || state[(checkIndex * 2) + 1] != 0) {
+		if (!isEmpty) {
 			//i think 01 = black
 			std::cout << "yes2.0";
 
 
 			if (i == 1 
-				&& ((isBlackTurn && isBlackPiece((checkIndex * 2) + 0, (checkIndex * 2) + 1, state)) 
-				|| (!isBlackTurn && isWhitePiece((checkIndex * 2) + 0, (checkIndex * 2) + 1, state)))
+				&& ((isBlackTurn && isBlackPiece(checkIndex, state)) 
+				|| (!isBlackTurn && isWhitePiece(checkIndex, state)))
 				) {
 				checkDirection = secondCheckDirection;
 				//index of the 2nd marble 
@@ -439,7 +443,7 @@ std::bitset<128U> game::moveHelper(int marbleCount, int index, int direction, in
 				std::cout << "yes";
 
 				checkIndex = MOVE_TABLE[index][direction];
-				if (state[(checkIndex * 2) + 0] != 0 || state[(checkIndex * 2) + 1] != 0) {
+				if (!isEmpty) {
 					return state;
 				}
 
@@ -479,8 +483,8 @@ std::bitset<128U> game::moveHelper(int marbleCount, int index, int direction, in
 	}
 	else {
 		for (int i = 0; i < marbleCount; i++) {
-			newState.set((storedIndex * 2) + 6, 0);
-			newState.set((storedIndex * 2) + 7, 0);
+			newState.set((storedIndex * 2) + 0, 0);
+			newState.set((storedIndex * 2) + 1, 0);
 			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 0, 1);
 			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 1, 0);
 
@@ -507,7 +511,68 @@ std::bitset<128U> game::move(int marbleCount, int index, int direction) {
 
 	if (marbleCount == 1) {
 		
-		
+		int initialIndex = index;
+
+		if (isBlackTurn) {
+			
+			int blackMarbleCount = 0;
+
+			//index is the index to check
+
+			while (isBlackPiece(index, state)) {
+				blackMarbleCount++;
+				index = MOVE_TABLE[index][direction];
+			}
+
+			if (blackMarbleCount > 3) {
+				return state;
+			}
+
+			if (isEmpty(index, state)) {
+				std::bitset<128U> newState = state;
+
+				newState.set((initialIndex * 2) + 0, 0);
+				newState.set((initialIndex * 2) + 1, 0);
+				newState.set((index * 2) + 0, 0);
+				newState.set((index * 2) + 1, 1);
+
+				return newState;
+			}
+
+			//stil have to do the part where the marbles push each other.
+
+
+		}
+		else {
+			//white scenario
+
+			int whiteMarbleCount = 0;
+
+			//index is the index to check
+
+			while (isBlackPiece(index, state)) {
+				whiteMarbleCount++;
+				index = MOVE_TABLE[index][direction];
+			}
+
+			if (whiteMarbleCount > 3) {
+				return state;
+			}
+
+			if (isEmpty(index, state)) {
+				std::bitset<128U> newState = state;
+
+				newState.set((initialIndex * 2) + 0, 0);
+				newState.set((initialIndex * 2) + 1, 0);
+				newState.set((index * 2) + 0, 1);
+				newState.set((index * 2) + 1, 0);
+
+				return newState;
+			}
+
+			//pushing case here
+
+		}
 
 	}
 
