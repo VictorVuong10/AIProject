@@ -57,6 +57,9 @@
     <ClCompile Include="IClickable.cpp">
       <Filter>Source Files\Interface</Filter>
     </ClCompile>
+    <ClCompile Include="logic.cpp">
+      <Filter>Source Files\Service</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -82,6 +85,9 @@
     </ClInclude>
     <ClInclude Include="IShowable.h">
       <Filter>Header Files\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="logic.h">
+      <Filter>Header Files\Service</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

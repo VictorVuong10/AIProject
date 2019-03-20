@@ -17,7 +17,7 @@ board::~board()
 }
 
 void board::initAllSlots(float x, float y, float size) {
-	unsigned int stateIndex = 0;
+	unsigned int slotIndex = 0;
 	float slotSize = size / 9;
 	float height = sqrt(pow(slotSize, 2) - pow(slotSize / 2, 2));
 	for (int i = 0; i < 9; ++i) {
@@ -27,34 +27,40 @@ void board::initAllSlots(float x, float y, float size) {
 		float ydiff = 2 * rowDiff * height;
 		float yinit = i < 4 ? y - ydiff : y + ydiff;
 		for (size_t j = 0; j < slotNumber; ++j) {
-			std::bitset<2U> slotState = boardState[stateIndex] << 1 | boardState[stateIndex + 1];
+			unsigned int bitIndex = 127 - slotIndex;
+			std::bitset<2U> slotState = boardState[bitIndex] << 1 | boardState[bitIndex - 1] << 0;
 			slot* s = new slot{ xinit, yinit, slotSize, slotState };
-			s->registerHandler(new std::function<void(sf::Event&)>{ [&, s, stateIndex](sf::Event e) {
+			s->registerHandler(new std::function<void(sf::Event&)>{ [&, s, slotIndex](sf::Event e) {
 				if (s->getState()[0] != _game->getIsBlackTurn())
 					return;
 				if (s->isSelected()) {
-					_game->unSelect(stateIndex >> 1);
-					s->unSelect();
-				}
-				else {
-					if(_game->trySelect(stateIndex >> 1))
+					if(_game->tryUnSelect(slotIndex >> 1))
+						s->unSelect();
+				} else {
+					if(_game->trySelect(slotIndex >> 1))
 						s->select();
 				}
 			} });
 			slots.push_back(s);
 			xinit += 2 * slotSize;
-			stateIndex += 2;
+			slotIndex += 2;
 		}
+	}
+}
+
+void board::unSelectAll() {
+	for (auto s : slots) {
+		s->unSelect();
 	}
 }
 
 void board::setState(std::bitset<128U> boardState)
 {
-	unsigned int stateIndex = 0;
+	unsigned int stateIndex = 127;
 	for (auto s : slots) {
-		std::bitset<2U> slotState = boardState[stateIndex] << 1 | boardState[stateIndex + 1];
+		std::bitset<2U> slotState = boardState[stateIndex] << 1 | boardState[stateIndex - 1] << 0;
 		s->setState(slotState);
-		stateIndex += 2;
+		stateIndex -= 2;
 	}
 }
 

@@ -27,6 +27,7 @@ public:
 	void click(sf::Event & e) override;
 	void show(sf::RenderWindow & window) override;
 	void setState(std::bitset<128U> boardState);
+	void unSelectAll();
 private:
 	std::bitset<128U> boardState;
 	sf::VertexArray bg;
