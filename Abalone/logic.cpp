@@ -11,17 +11,20 @@ logic::~logic()
 {
 }
 
-bool isBlackPiece(int index, std::bitset<128U>& state) {
+bool isWhitePiece(int index, std::bitset<128U>& state) {
 	return state[127 - (index << 1)];
 }
 
-bool isWhitePiece(int index, std::bitset<128U>& state) {
-	return state[127 - (index << 1) - 1];;
+bool isBlackPiece(int index, std::bitset<128U>& state) {
+	return state[127 - (index << 1) - 1];
 }
+
 
 bool isEmpty(int index, std::bitset<128U>& state) {
 	int bitIndex = 127 - (index << 1);
-	return state[bitIndex] || state[bitIndex - 1];
+	//im changing this because 0 || 0 will return false so but then that is empty so it should return true
+	// 0 is false and 1 is true;
+	return !state[bitIndex - 1] && !state[bitIndex];
 }
 
 
@@ -32,6 +35,8 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 	int index = act.index;
 	int direction = act.direction;
 
+
+	//i dont think we need this part, just put the direction the rhs directyl into checkDirections?
 	int drr1 = (direction + 4) % 6;
 	int drr2 = (direction + 5) % 6;
 
@@ -39,6 +44,15 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 	int secondCheckDirection = drr2;
 
 	int storedIndex = index;
+
+	std::cout << "Check Direction :" << checkDirection << std::endl;
+
+
+	std::cout << "Second Check Direction :" << secondCheckDirection << std::endl;
+
+	std::cout << "index :" << index << std::endl;
+
+	std::cout << "state :\n" << state << std::endl;
 
 	//if (MOVE_TABLE[index][direction] == -1) {
 
@@ -70,10 +84,27 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 
 		std::wcout << "a fucking bool second bit :" << (state[(checkIndex * 2) + 1] != 0) << "\n";
 
-		if (!isEmpty) {
-			//i think 01 = black
-			std::cout << "yes2.0";
+		std::cout << i << std::endl;
 
+
+		if (!isEmpty(checkIndex, state)) {
+			//i think 01 = black
+			std::cout << "checkIndex: " << checkIndex << "\n";
+			std::cout << "checkIndex is empty: " << isEmpty(checkIndex, state) << "\n";
+
+
+			if (i == 1) {
+				std::cout << "i is = 1";
+			}
+
+			if (isBlackTurn) {
+				std::cout << "is black turn \n";
+			}
+
+			if (isBlackPiece(checkIndex, state)) {
+				std::cout << "checkIndex of if statement" << checkIndex << "\n";
+				std::cout << "is it a blackpiece for that check index?, yes yes it is.";
+			}
 
 			if (i == 1
 				&& ((isBlackTurn && isBlackPiece(checkIndex, state))
@@ -91,11 +122,7 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 				}
 
 				std::cout << "good";
-			}
-
-			//didnt calculate white scenario yet.
-
-			else {
+			} else {
 				return state;
 			}
 
@@ -114,10 +141,10 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 	if (isBlackTurn) {
 		//instead of first index i could go backwards but i dont really want to atm,
 		for (int i = 0; i < marbleCount; i++) {
+			newState.set((127 - storedIndex * 2) -1 , 0);
 			newState.set((127 - storedIndex * 2) + 0, 0);
-			newState.set((127 - storedIndex * 2) + 1, 0);
-			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 0, 0);
-			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 1, 1);
+			newState.set(127- ((MOVE_TABLE[storedIndex][direction]) * 2) -1 , 1);
+			newState.set(127 -((MOVE_TABLE[storedIndex][direction]) * 2) + 0, 0);
 
 			//just so index does not become -1 but i dont think this matters.
 			if (i < marbleCount - 1)
@@ -126,10 +153,10 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 	}
 	else {
 		for (int i = 0; i < marbleCount; i++) {
+			newState.set((127 - storedIndex * 2) - 1, 0);
 			newState.set((127 - storedIndex * 2) + 0, 0);
-			newState.set((127 - storedIndex * 2) + 1, 0);
-			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 0, 1);
-			newState.set(((MOVE_TABLE[storedIndex][direction]) * 2) + 1, 0);
+			newState.set(127 - ((MOVE_TABLE[storedIndex][direction]) * 2) - 1, 0);
+			newState.set(127 - ((MOVE_TABLE[storedIndex][direction]) * 2) + 0, 1);
 
 			if (i < marbleCount - 1)
 				storedIndex = MOVE_TABLE[storedIndex][checkDirection];
