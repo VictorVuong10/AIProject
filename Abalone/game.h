@@ -105,9 +105,11 @@ private:
 	button* p1WhiteBtn;
 	button* p2BlackBtn;
 	button* p2WhiteBtn;
+	sf::Text nextMoveText;
 	void initMaxMoves();
 	void initMoveTimeLimit();
 	void initPlayerColorBtns();
+	void initNextMove();
 
 	void initAllEle();
 	void initboardSetupBtn();

@@ -118,6 +118,7 @@ void game::show(sf::RenderWindow & window)
 	window.draw(moveTimeLimitBox);
 	window.draw(moveTimeLimitTitle);
 	window.draw(moveTimeLimitEditText);
+	window.draw(nextMoveText);
 	p1BlackBtn->show(window);
 	p1WhiteBtn->show(window);
 	p2BlackBtn->show(window);
@@ -147,6 +148,7 @@ void game::initAllEle()
 	initMaxMoves();
 	initMoveTimeLimit();
 	initPlayerColorBtns();
+	initNextMove();
 }
 
 void game::initBoard()
@@ -624,4 +626,12 @@ void game::initPlayerColorBtns()
 	}
 	};
 	p1BlackBtn->registerHandler(handler);
+}
+
+void game::initNextMove()
+{
+	sf::Font &arial = rman->getFont("arial");
+	nextMoveText.setPosition(100, 20);
+	nextMoveText.setFont(arial);
+	nextMoveText.setString("I5, I6, I7 -> G6, G7, G8");
 }
