@@ -31,7 +31,8 @@ void board::initAllSlots(float x, float y, float size) {
 			std::bitset<2U> slotState = boardState[bitIndex] << 1 | boardState[bitIndex - 1] << 0;
 			slot* s = new slot{ xinit, yinit, slotSize, slotState };
 			s->registerHandler(new std::function<void(sf::Event&)>{ [&, s, slotIndex](sf::Event e) {
-				if (s->getState()[0] != _game->getIsBlackTurn())
+				auto sState = s->getState();
+				if (sState.none() || sState[0] != _game->getIsBlackTurn())
 					return;
 				if (s->isSelected()) {
 					if(_game->tryUnSelect(slotIndex >> 1))

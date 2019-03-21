@@ -220,6 +220,7 @@ void game::initResetBtn() {
 			gameBoard->setState(state);
 			player1IsHuman = true;
 			player2IsHuman = false;
+			gameBoard->unSelectAll();
 			selectedIndex = {};
 			storedSec = 0;
 			isBlackTurn = true;
@@ -429,7 +430,7 @@ bool game::isInlineValid(unsigned short direction) {
 		auto nextState = state[biti] << 1 | state[biti - 1] << 0;
 		if (!nextState)
 			return true;
-		if ((nextState & 2) >> 1 ^ isBlackTurn << 0)
+		if (nextState & 2 ^ isBlackTurn << 1)
 			return false;
 		next = logic::MOVE_TABLE[next][direction];
 		++checkCount;
