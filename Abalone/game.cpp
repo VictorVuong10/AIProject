@@ -173,6 +173,7 @@ void game::startGame() {
 	}
 	progress = gameProgress::IN_PROGRESS;
 	clock.restart();
+	std::cout << "Game START." << std::endl << std::endl;
 }
 
 void game::initPauseBtn()
@@ -186,6 +187,7 @@ void game::initPauseBtn()
 				return;
 			this->progress = gameProgress::PAUSED;
 			this->storedSec += this->clock.getElapsedTime().asSeconds();
+			std::cout << "Game is paused." << std::endl << std::endl;
 		}
 	};
 	pauseBtn->registerHandler(handler);
@@ -204,6 +206,7 @@ void game::initUndoBtn()
 			storedSec = lastState.storedSec;
 			isBlackTurn = lastState.isBlackTurn;
 			clock.restart();
+			std::cout << "Undo last move." << std::endl << std::endl;
 		}
 	};
 	undoBtn->registerHandler(handler);
@@ -226,6 +229,7 @@ void game::initResetBtn() {
 			timerText.setString("Timer: 0:0");
 			blackLostText.setString("Black Lost: 0");
 			whiteLostText.setString("White Lost: 0");
+			std::cout << "Game is reseted." << std::endl << std::endl;
 		}
 	};
 	resetBtn->registerHandler(handler);
@@ -274,7 +278,7 @@ void game::initboardSetupBtn() {
 void game::initPlayerChangeBtn() {
 	sf::Font &arial = rman->getFont("arial");
 	playerChangeLabel.setFont(arial);
-	playerChangeLabel.setString("Change playerS: ");
+	playerChangeLabel.setString("Change players: ");
 	playerChangeLabel.setFillColor(sf::Color::Red);
 	playerChangeLabel.setCharacterSize(25);
 	playerChangeLabel.setPosition(950, 250);
@@ -364,15 +368,19 @@ void game::initMoveBtn() {
 				nextState(state);
 			});		*/
 			
+			if (selectedIndex.size() == 0)
+				return;
 			bool moveType = isSideMove(i);
 			bool valid = moveType ? isSideMoveValid(i) : isInlineValid(i);
 			if (valid) {
 				auto action = makeAction(i, moveType);
+				std::cout << "player " << (isBlackTurn ? "1(Black)" : "2(White)") << "is moving by action: " << std::endl;
 				std::cout << "count: " <<action.count << " index: " << action.index << " direction: " << action.direction << std::endl;
 				gameBoard->unSelectAll();
 				selectedIndex.clear();
-				nextState(logic::move(state, action, isBlackTurn));
+				auto tempState = logic::move(state, action, isBlackTurn);
 				isBlackTurn = !isBlackTurn;
+				nextState(tempState);
 			}
 			
 		} };
@@ -386,9 +394,10 @@ logic::action game::makeAction(unsigned short direction, bool isSideMove) {
 		bool isHighCcw1 = logic::CLOCKWISE_RIGHT[direction][1];
 		int iCcw1 = isHighCcw1 ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
 		int iCcw1Next = logic::MOVE_TABLE[iCcw1][drrCcw1];
-		int biti1 = 127 - (iCcw1Next << 1);
-		if (iCcw1Next != -1 && (state[biti1] || state[biti1 - 1]))
-			return { static_cast<int>(selectedIndex.size()), iCcw1, direction };
+		for (int is : selectedIndex) {
+			if(iCcw1Next == is)
+				return { static_cast<int>(selectedIndex.size()), iCcw1, direction };
+		}
 		int drrCcw2 = (direction + 4) % 6;
 		bool isHighCcw2 = logic::CLOCKWISE_RIGHT[direction][0];
 		int iCcw2 = isHighCcw2 ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
@@ -473,6 +482,7 @@ void game::nextState(std::bitset<128U> state) {
 	this->state = state;
 	gameBoard->setState(state);
 	gameState toBeSaved = { player1IsHuman, player2IsHuman, state, storedSec + clock.getElapsedTime().asSeconds(), isBlackTurn };
+	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << "seconds" << std::endl << std::endl;
 	history.push(toBeSaved);
 }
 

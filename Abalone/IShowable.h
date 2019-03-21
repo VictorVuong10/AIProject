@@ -54,7 +54,6 @@
 class IShowable
 {
 public:
-	//virtual void show(std::vector<sf::Drawable*>& shapes, std::mutex & mtx) = 0;
 	virtual void show(sf::RenderWindow& window) = 0;
 	virtual ~IShowable() = default;
 };

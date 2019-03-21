@@ -112,13 +112,6 @@ private:
 	void initLog();
 	void setTimer();
 
-
-//	std::bitset<128U> inlineMove(int marbleCount, )
-
-
-	
-
-
 	void nextState(std::bitset<128U> state);
 
 	

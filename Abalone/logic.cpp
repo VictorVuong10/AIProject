@@ -35,24 +35,10 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 	int index = act.index;
 	int direction = act.direction;
 
-
-	//i dont think we need this part, just put the direction the rhs directyl into checkDirections?
-	int drr1 = (direction + 4) % 6;
-	int drr2 = (direction + 5) % 6;
-
-	int checkDirection = drr1;
-	int secondCheckDirection = drr2;
+	int checkDirection = (direction + 4) % 6;
+	int secondCheckDirection = (direction + 5) % 6;
 
 	int storedIndex = index;
-
-	std::cout << "Check Direction :" << checkDirection << std::endl;
-
-
-	std::cout << "Second Check Direction :" << secondCheckDirection << std::endl;
-
-	std::cout << "index :" << index << std::endl;
-
-	std::cout << "state :\n" << state << std::endl;
 
 	//if (MOVE_TABLE[index][direction] == -1) {
 
@@ -72,39 +58,8 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 		//that takes in 2 ints and checks the state to see if it is ... peice
 
 
-		std::cout << "checkIndex: " << checkIndex << "\n";
-
-		std::cout << "STATEcheckIndex: " << state[(checkIndex * 2) + 0] << "\n";
-
-		std::cout << "STATEcheckIndex: " << state[(checkIndex * 2) + 1] << "\n";
-
-		std::wcout << "a fucking bool" << (state[(checkIndex * 2) + 0] != 0 && state[(checkIndex * 2) + 1] != 0) << "\n";
-
-		std::wcout << "a fucking bool first bit :" << (state[(checkIndex * 2) + 0] != 0) << "\n";
-
-		std::wcout << "a fucking bool second bit :" << (state[(checkIndex * 2) + 1] != 0) << "\n";
-
-		std::cout << i << std::endl;
-
-
 		if (!isEmpty(checkIndex, state)) {
 			//i think 01 = black
-			std::cout << "checkIndex: " << checkIndex << "\n";
-			std::cout << "checkIndex is empty: " << isEmpty(checkIndex, state) << "\n";
-
-
-			if (i == 1) {
-				std::cout << "i is = 1";
-			}
-
-			if (isBlackTurn) {
-				std::cout << "is black turn \n";
-			}
-
-			if (isBlackPiece(checkIndex, state)) {
-				std::cout << "checkIndex of if statement" << checkIndex << "\n";
-				std::cout << "is it a blackpiece for that check index?, yes yes it is.";
-			}
 
 			if (i == 1
 				&& ((isBlackTurn && isBlackPiece(checkIndex, state))
@@ -114,14 +69,12 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 				//index of the 2nd marble 
 				index = MOVE_TABLE[storedIndex][checkDirection];
 
-				std::cout << "yes";
 
 				checkIndex = MOVE_TABLE[index][direction];
-				if (!isEmpty) {
+				if (!isEmpty(checkIndex, state)) {
 					return state;
 				}
 
-				std::cout << "good";
 			} else {
 				return state;
 			}
@@ -271,122 +224,8 @@ std::bitset<128U> logic::inlineMove(std::bitset<128U> state, action act, bool is
 	//opponent has more, can't push(invalid)
 	return state;
 
-	//int initialIndex = index;
-
-	//if (isBlackTurn) {
-
-	//	int blackMarbleCount = 0;
-
-	//	//index is the index to check
-
-	//	while (isBlackPiece(index, state)) {
-	//		blackMarbleCount++;
-	//		index = MOVE_TABLE[index][direction];
-	//	}
-
-	//	
-
-
-	//	if (blackMarbleCount > 3) {
-	//		return state;
-	//	}
-
-	//	if (isEmpty(index, state)) {
-	//		std::bitset<128U> newState = state;
-
-	//		newState.set((initialIndex * 2) + 0, 0);
-	//		newState.set((initialIndex * 2) + 1, 0);
-	//		newState.set((index * 2) + 0, 0);
-	//		newState.set((index * 2) + 1, 1);
-
-	//		return newState;
-	//	}
-
-	//	//stil have to do the part where the marbles push each other.
-
-
-	//}
-	//else {
-	//	//white scenario
-
-	//	int whiteMarbleCount = 0;
-
-	//	//index is the index to check
-
-	//	while (isBlackPiece(index, state)) {
-	//		whiteMarbleCount++;
-	//		index = MOVE_TABLE[index][direction];
-	//	}
-
-	//	if (whiteMarbleCount > 3) {
-	//		return state;
-	//	}
-
-	//	if (isEmpty(index, state)) {
-	//		std::bitset<128U> newState = state;
-
-	//		newState.set((initialIndex * 2) + 0, 0);
-	//		newState.set((initialIndex * 2) + 1, 0);
-	//		newState.set((index * 2) + 0, 1);
-	//		newState.set((index * 2) + 1, 0);
-
-	//		return newState;
-	//	}
-
-	//	//pushing case here
-
-	//}
 }
 
 std::bitset<128U> logic::move(std::bitset<128U> state, action act, bool isBlackTurn) {
-	
-	std::cout << act.count << " asdasd : " << act.index << "asdasd \n";
-
-	if (act.count == 1) {
-
-		return inlineMove(state, act, isBlackTurn);
-
-	}
-
-	else {
-
-		
-		return sideMove(state, act, isBlackTurn);
-
-		//if (direction == 0) {
-
-		//	//4 is the check direction, 5 is the second possible check direction
-		//	return moveHelper(marbleCount, index, direction, 4, 5);
-
-		//}
-		//else if (direction == 1) {
-
-		//	//4 is the check direction, 5 is the second possible check direction
-		//	return moveHelper(marbleCount, index, direction, 5, 1);
-
-		//}
-		//else if (direction == 2) {
-
-		//	//4 is the check direction, 5 is the second possible check direction
-		//	return moveHelper(marbleCount, index, direction, 4, 3);
-
-		//}
-		//else if (direction == 3) {
-
-		//	//4 is the check direction, 5 is the second possible check direction
-		//	return moveHelper(marbleCount, index, direction, 5, 4);
-
-		//}
-		//else if (direction == 4) {
-
-		//	//4 is the check direction, 5 is the second possible check direction
-		//	return moveHelper(marbleCount, index, direction, 2, 3);
-
-		//}
-		////direction == 5 i probably shoulda done a switch statement but screw it.
-		//return moveHelper(marbleCount, index, direction, 3, 4);
-
-	}
-
-
+	return act.count == 1? inlineMove(state, act, isBlackTurn) : sideMove(state, act, isBlackTurn);
 }
