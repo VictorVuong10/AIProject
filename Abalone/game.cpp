@@ -111,6 +111,19 @@ void game::show(sf::RenderWindow & window)
 	window.draw(playerChangeLabel);
 	window.draw(blackLostText);
 	window.draw(whiteLostText);
+
+	window.draw(maxMovesBox);
+	window.draw(maxMovesTitle);
+	window.draw(maxMovesEditText);
+	window.draw(moveTimeLimitBox);
+	window.draw(moveTimeLimitTitle);
+	window.draw(moveTimeLimitEditText);
+	window.draw(nextMoveText);
+	p1BlackBtn->show(window);
+	p1WhiteBtn->show(window);
+	p2BlackBtn->show(window);
+	p2WhiteBtn->show(window);
+
 	setTimer();
 	window.draw(timerText);
 	for (auto b : moveBtn) {
@@ -132,6 +145,10 @@ void game::initAllEle()
 	initMoveBtn();
 	initScore();
 	initLog();
+	initMaxMoves();
+	initMoveTimeLimit();
+	initPlayerColorBtns();
+	initNextMove();
 }
 
 void game::initBoard()
@@ -173,6 +190,7 @@ void game::startGame() {
 	}
 	progress = gameProgress::IN_PROGRESS;
 	clock.restart();
+	std::cout << "Game START." << std::endl << std::endl;
 }
 
 void game::initPauseBtn()
@@ -186,6 +204,7 @@ void game::initPauseBtn()
 				return;
 			this->progress = gameProgress::PAUSED;
 			this->storedSec += this->clock.getElapsedTime().asSeconds();
+			std::cout << "Game is paused." << std::endl << std::endl;
 		}
 	};
 	pauseBtn->registerHandler(handler);
@@ -204,6 +223,7 @@ void game::initUndoBtn()
 			storedSec = lastState.storedSec;
 			isBlackTurn = lastState.isBlackTurn;
 			clock.restart();
+			std::cout << "Undo last move." << std::endl << std::endl;
 		}
 	};
 	undoBtn->registerHandler(handler);
@@ -227,6 +247,7 @@ void game::initResetBtn() {
 			timerText.setString("Timer: 0:0");
 			blackLostText.setString("Black Lost: 0");
 			whiteLostText.setString("White Lost: 0");
+			std::cout << "Game is reseted." << std::endl << std::endl;
 		}
 	};
 	resetBtn->registerHandler(handler);
@@ -275,12 +296,12 @@ void game::initboardSetupBtn() {
 void game::initPlayerChangeBtn() {
 	sf::Font &arial = rman->getFont("arial");
 	playerChangeLabel.setFont(arial);
-	playerChangeLabel.setString("Change playerS: ");
+	playerChangeLabel.setString("Change players: ");
 	playerChangeLabel.setFillColor(sf::Color::Red);
 	playerChangeLabel.setCharacterSize(25);
 	playerChangeLabel.setPosition(950, 250);
-	player1ChangeBtn = new button{ 70, "Player1: Human", {1000, 300}, sf::Color{ 91, 44, 6 } };
-	player2ChangeBtn = new button{ 70, "Player1: AI", {1000, 340}, sf::Color{ 91, 44, 6 } };
+	player1ChangeBtn = new button{ 70, "Player 1: Human", {1000, 300}, sf::Color{ 91, 44, 6 } };
+	player2ChangeBtn = new button{ 70, "Player 2: AI", {1000, 340}, sf::Color{ 91, 44, 6 } };
 	player1ChangeBtn->getBackground().setSize({ 170, 35 });
 	player2ChangeBtn->getBackground().setSize({ 170, 35 });
 	auto player1ChangeHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
@@ -365,15 +386,19 @@ void game::initMoveBtn() {
 				nextState(state);
 			});		*/
 			
+			if (selectedIndex.size() == 0)
+				return;
 			bool moveType = isSideMove(i);
 			bool valid = moveType ? isSideMoveValid(i) : isInlineValid(i);
 			if (valid) {
 				auto action = makeAction(i, moveType);
+				std::cout << "player " << (isBlackTurn ? "1(Black)" : "2(White)") << "is moving by action: " << std::endl;
 				std::cout << "count: " <<action.count << " index: " << action.index << " direction: " << action.direction << std::endl;
 				gameBoard->unSelectAll();
 				selectedIndex.clear();
-				nextState(logic::move(state, action, isBlackTurn));
+				auto tempState = logic::move(state, action, isBlackTurn);
 				isBlackTurn = !isBlackTurn;
+				nextState(tempState);
 			}
 			
 		} };
@@ -387,9 +412,10 @@ logic::action game::makeAction(unsigned short direction, bool isSideMove) {
 		bool isHighCcw1 = logic::CLOCKWISE_RIGHT[direction][1];
 		int iCcw1 = isHighCcw1 ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
 		int iCcw1Next = logic::MOVE_TABLE[iCcw1][drrCcw1];
-		int biti1 = 127 - (iCcw1Next << 1);
-		if (iCcw1Next != -1 && (state[biti1] || state[biti1 - 1]))
-			return { static_cast<int>(selectedIndex.size()), iCcw1, direction };
+		for (int is : selectedIndex) {
+			if(iCcw1Next == is)
+				return { static_cast<int>(selectedIndex.size()), iCcw1, direction };
+		}
 		int drrCcw2 = (direction + 4) % 6;
 		bool isHighCcw2 = logic::CLOCKWISE_RIGHT[direction][0];
 		int iCcw2 = isHighCcw2 ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
@@ -474,6 +500,7 @@ void game::nextState(std::bitset<128U> state) {
 	this->state = state;
 	gameBoard->setState(state);
 	gameState toBeSaved = { player1IsHuman, player2IsHuman, state, storedSec + clock.getElapsedTime().asSeconds(), isBlackTurn };
+	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << "seconds" << std::endl << std::endl;
 	history.push(toBeSaved);
 }
 
@@ -529,4 +556,83 @@ bool game::tryUnSelect(int index) {
 		return true;
 	}
 	return false;
+}
+
+void game::initMaxMoves()
+{
+	sf::Font &arial = rman->getFont("arial");
+	maxMovesBox.setSize(sf::Vector2f(170, 35));
+	maxMovesBox.setFillColor(sf::Color(165, 104, 24));
+	maxMovesBox.setPosition(1000, 420);
+
+	//maxMovesBox = new button{100, "", {1000, 420}, sf::Color(165, 104, 24) };
+
+	maxMovesEditText.setPosition(1000, 420);
+	maxMovesEditText.setFont(arial);
+
+	maxMovesTitle.setFont(arial);
+	maxMovesTitle.setString("Move Limit:");
+	maxMovesTitle.setPosition(1000, 380);
+	maxMovesTitle.setFillColor(sf::Color(255, 0, 0));
+}
+
+void game::setMaxMovesEditText(sf::String maxMoves)
+{
+	std::string temp = maxMovesEditText.getString();
+	temp.append(maxMoves.toAnsiString());
+	maxMovesEditText.setString(temp);
+}
+
+void game::setMoveTimeLimitEditText(sf::String moveTimeLimit)
+{
+	std::string temp = moveTimeLimitEditText.getString();
+	temp.append(moveTimeLimit.toAnsiString());
+	moveTimeLimitEditText.setString(temp);
+}
+
+void game::initMoveTimeLimit()
+{
+	sf::Font &arial = rman->getFont("arial");
+	moveTimeLimitBox.setSize(sf::Vector2f(170, 35));
+	moveTimeLimitBox.setFillColor(sf::Color(165, 104, 24));
+	moveTimeLimitBox.setPosition(1000, 500);
+
+	//maxMovesBox = new button{100, "", {1000, 420}, sf::Color(165, 104, 24) };
+
+	moveTimeLimitEditText.setPosition(1000, 500);
+	moveTimeLimitEditText.setFont(arial);
+
+	moveTimeLimitTitle.setFont(arial);
+	moveTimeLimitTitle.setString("Time Limit:");
+	moveTimeLimitTitle.setPosition(1000, 460);
+	moveTimeLimitTitle.setFillColor(sf::Color(255, 0, 0));
+}
+
+void game::initPlayerColorBtns()
+{
+	p1BlackBtn = new button{ 60, "P1", {1000, 560}, sf::Color::Black };
+	p2BlackBtn = new button{ 60, "P2", {1000, 600}, sf::Color::Black };
+	p1WhiteBtn = new button{ 60, "P1", {1085, 560}, sf::Color::White };
+	p2WhiteBtn = new button{ 60, "P2", {1085, 600}, sf::Color::White };
+
+	p1WhiteBtn->setFillColor(sf::Color::Black);
+	p2WhiteBtn->setFillColor(sf::Color::Black);
+
+
+	auto handler = new std::function<void(sf::Event&)>
+	{
+		[&, this](sf::Event& e)
+		{
+		//TODO logic to set P2 to white, and undo P1 white if its set and P2 black if it its set
+	}
+	};
+	p1BlackBtn->registerHandler(handler);
+}
+
+void game::initNextMove()
+{
+	sf::Font &arial = rman->getFont("arial");
+	nextMoveText.setPosition(100, 20);
+	nextMoveText.setFont(arial);
+	nextMoveText.setString("I5, I6, I7 -> G6, G7, G8");
 }

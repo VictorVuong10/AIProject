@@ -19,25 +19,16 @@ gui::~gui()
 	delete _game;
 }
 
-void gui::startBtn()
+void gui::start()
 {
+	bool inMaxMoves = false;
+	bool inMoveTimeLimit = false;
+
 	using namespace std;
 	if (!loadAllResource()) {
 		return;
 	}
-	resourceManager &rman = resourceManager::instance;
-	sf::Font &arial = rman.getFont("arial");
-	sf::Text text;
-	text.setFont(arial);
-	text.setString("hello");
-	text.setFillColor(sf::Color::Red);
-	text.setCharacterSize(24);
-	text.setPosition(900, 700);
-/*
-	std::bitset<128U> state{ game::GERMAN_DAISY_STR };
 
-	board b{ 500, 500, 300, state };
-*/
 	_game = new game{ this };
 
 	while (window.isOpen())
@@ -51,28 +42,42 @@ void gui::startBtn()
 
 			}
 			if (event.type == sf::Event::MouseButtonPressed) {
-				std::cout << "mouse x: " << event.mouseButton.x << std::endl;
-				std::cout << "mouse y: " << event.mouseButton.y << std::endl;
-				//btn->click(event);
 				_game->click(event);
 			}
-		}
-		auto now = std::chrono::system_clock::now();
-		time_t nowt = std::chrono::system_clock::to_time_t(now);
-		char ts[100];
-		ctime_s(ts, 100, &nowt);
-		text.setString(ts);
 
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.mouseButton.x > 1000 && event.mouseButton.x < 1170 && event.mouseButton.y < 455 && event.mouseButton.y > 420)
+			{
+				inMoveTimeLimit = false;
+				inMaxMoves = true;
+			}
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.mouseButton.x > 1000 && event.mouseButton.x < 1170 && event.mouseButton.y < 535 && event.mouseButton.y > 500)
+			{
+				inMaxMoves = false;
+				inMoveTimeLimit = true;
+			}
+			if (event.type == sf::Event::TextEntered && inMaxMoves)
+			{
+				if (event.text.unicode < 128)
+				{
+					std::cout << event.text.unicode;
+					_game->setMaxMovesEditText(event.text.unicode);
+				}
+			}
+			if (event.type == sf::Event::TextEntered && inMoveTimeLimit)
+			{
+				if (event.text.unicode < 128)
+				{
+					_game->setMoveTimeLimitEditText(event.text.unicode);
+				}
+			}
+		}
 		executeCallback();
 
 
 		window.clear();
-		//btn->show(std::ref(window));
 		_game->show(std::ref(window));
-		window.draw(text);
 		window.display();
 	}
-	//delete btn;
 }
 
 void gui::safePush(std::function<void()> cb) {
@@ -92,7 +97,5 @@ void gui::executeCallback() {
 
 bool gui::loadAllResource() {
 	resourceManager& rman = resourceManager::instance;
-	return rman.loadFont("arial", "../arial.ttf")
-		&& rman.loadTexture("normalBtn", "../normal.png")
-		&& rman.loadTexture("clikcedBtn", "../clicked.png");
+	return rman.loadFont("arial", "../arial.ttf");
 }

@@ -43,7 +43,7 @@ queue<task*> mq{};
 
 int main() {
 	gui g{};
-	g.startBtn();
+	g.start();
 	return 0;
 }
 //
