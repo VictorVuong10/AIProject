@@ -21,6 +21,9 @@ gui::~gui()
 
 void gui::start()
 {
+	bool inMaxMoves = false;
+	bool inMoveTimeLimit = false;
+
 	using namespace std;
 	if (!loadAllResource()) {
 		return;
@@ -41,8 +44,33 @@ void gui::start()
 			if (event.type == sf::Event::MouseButtonPressed) {
 				_game->click(event);
 			}
-		}
 
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.mouseButton.x > 1000 && event.mouseButton.x < 1170 && event.mouseButton.y < 455 && event.mouseButton.y > 420)
+			{
+				inMoveTimeLimit = false;
+				inMaxMoves = true;
+			}
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.mouseButton.x > 1000 && event.mouseButton.x < 1170 && event.mouseButton.y < 535 && event.mouseButton.y > 500)
+			{
+				inMaxMoves = false;
+				inMoveTimeLimit = true;
+			}
+			if (event.type == sf::Event::TextEntered && inMaxMoves)
+			{
+				if (event.text.unicode < 128)
+				{
+					std::cout << event.text.unicode;
+					_game->setMaxMovesEditText(event.text.unicode);
+				}
+			}
+			if (event.type == sf::Event::TextEntered && inMoveTimeLimit)
+			{
+				if (event.text.unicode < 128)
+				{
+					_game->setMoveTimeLimitEditText(event.text.unicode);
+				}
+			}
+		}
 		executeCallback();
 
 

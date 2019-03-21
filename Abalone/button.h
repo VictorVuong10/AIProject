@@ -16,6 +16,7 @@ public:
 	void setText(std::string);
 	sf::Text * getText();
 	void show(sf::RenderWindow& window) override;
+	void setFillColor(sf::Color color);
 private:
 
 	sf::RectangleShape background;
