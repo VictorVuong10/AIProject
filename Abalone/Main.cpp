@@ -16,9 +16,9 @@ int main() {
 		cout << r.first.count << " " << r.first.index << " " << r.first.direction << endl;
 	}*/
 	bool isBlackTurn = true;
-	auto input = logic::notationToState("../Test/Test1.input", &isBlackTurn);
+	auto input = logic::notationToState("../Test/Test2.input", &isBlackTurn);
 	auto generated = logic::getAllValidMove(input[0], isBlackTurn);
-	auto output = logic::notationToState("../Test/Test1.board");
+	auto output = logic::notationToState("../Test/Test2.board");
 	cout << generated.size() << "/" << output.size() << endl;
 	int matched = 0;
 	for (auto g : generated) {

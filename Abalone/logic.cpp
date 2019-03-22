@@ -361,7 +361,7 @@ std::vector<std::bitset<128U>> logic::notationToState(const std::string& path, b
 			int index = rowColToIndex(row, col);
 			//std::cout << " " << index << std::endl;
 			int bitIndex = 127 - (index << 1);
-			if (color != 'b') --bitIndex;
+			if (color == 'b') --bitIndex;
 			state.set(bitIndex);
 		}
 		validStates.push_back(state);
