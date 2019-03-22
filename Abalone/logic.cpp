@@ -128,42 +128,55 @@ std::bitset<128U> logic::sideMoveValidating(std::bitset<128U>& state, action& ac
 	int index = act.index;
 	int direction = act.direction;
 
+	//counter clockwise first
 	int drr1 = (direction + 5) % 6;
+
+	//counter clockwise second
 	int drr2 = (direction + 4) % 6;
 	int drr = drr1;
 
 	int next = -1;
 	for (int i = 0; i < marbleCount; ++i) {
 
+		if (index == -1)
+			return state;
+
 		next = MOVE_TABLE[index][direction];
 		
-		//temporary not allow suicide
-		if (next == -1) {
-			return state;
-		}
-
 		int bitIndex = 127 - (index << 1);
 		auto indexState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
-		//slot empty
+
+		//index slot is empty, maybe we can change direction
 		if (!indexState) {
+			//try to change direction
 			if (i == 1) {
 				drr = drr2;
 				next = index;
 				int drrOpp = (direction + 3) % 6;
 				index = MOVE_TABLE[index][drrOpp];
+				//the next direction out bound, nothing to move, both direction failed
 				if (index == -1)
 					return state;
-				int bitIndex = 127 - (index << 1);
-				auto nextState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
-				if (nextState & 2 ^ isBlackTurn << 1)
-					continue;
-				else
+				bitIndex = 127 - (index << 1);
+				indexState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
+				//next direction is also emppty or different color, both direction failed
+				if (!indexState || (indexState & 1 ^ isBlackTurn << 0))
 					return state;
+				//same color
+				else {
+					index = MOVE_TABLE[index][drr];
+					
+					continue;
+				}
 			}
 			return state;
 		}
 		//different color
 		if (indexState & 1 ^ isBlackTurn << 0)
+			return state;
+
+		//not allow suicide
+		if (next == -1)
 			return state;
 
 		if (next != -1) {
@@ -176,8 +189,6 @@ std::bitset<128U> logic::sideMoveValidating(std::bitset<128U>& state, action& ac
 		}
 		
 		index = MOVE_TABLE[index][drr];
-		if (index == -1)
-			return state;
 	}
 
 	index = act.index;
@@ -190,9 +201,9 @@ std::bitset<128U> logic::sideMoveValidating(std::bitset<128U>& state, action& ac
 			int bitNextIndex = 127 - (next << 1);
 			state.set(bitNextIndex, !isBlackTurn);
 			state.set(bitNextIndex - 1, isBlackTurn);
-			next = MOVE_TABLE[next][drr];
 		}
 		index = MOVE_TABLE[index][drr];
+		next = MOVE_TABLE[index][direction];
 	}
 	return state;
 }
@@ -205,9 +216,13 @@ std::bitset<128U> logic::inlineMove(std::bitset<128U>& state, action& act, bool 
 	int sameColorCount = 0;
 	int endIndex = 0;
 	for (int next = index; sameColorCount < 4; ++sameColorCount, next = MOVE_TABLE[next][direction]) {
-		//out bound(invalid)
-		if (next == -1)
+		//suicide case, directly return to disable suicide
+		if (next == -1) {
+			/*int resetI = 127 - (index << 1);
+			state.set(resetI, 0);
+			state.set(resetI - 1, 0);*/
 			return state;
+		}
 		int biti = 127 - (next << 1);
 		auto nextState = state[biti] << 1 | state[biti - 1] << 0;
 		//empty maybe (valid)
@@ -247,32 +262,29 @@ std::bitset<128U> logic::inlineMove(std::bitset<128U>& state, action& act, bool 
 		}
 		endIndex = next;
 	}
-	//no current turn marble(invalid)
-	if (!sameColorCount)
+	//no marble or more than 3 marble (invalid)
+	if (!sameColorCount || sameColorCount > 3)
 		return state;
 
 	int oppIndex = MOVE_TABLE[endIndex][direction];
 	int oppColorCount = 0;
 	int oppEndIndex = 0;
+	//Because we checked 4 marbles in last loop, the only case we enter this loop is that we met a different color
 	for (int next = oppIndex; oppColorCount < sameColorCount; ++oppColorCount, next = MOVE_TABLE[next][direction]) {
+		//KILL THE OPPONENT
 		if (next == -1) {
-			//pushing self out(invalid)
-			if(oppColorCount < 1)
-				return state;
-			else { //KILL THE OPPONENT
-				int resetOpp = 127 - (oppIndex << 1);
-				int resetTeam = 127 - (index << 1);
-				int setTeam = 127 - (oppIndex << 1);
-				state.set(resetOpp, 0);
-				state.set(resetOpp - 1, 0);
-				state.set(resetTeam, 0);
-				state.set(resetTeam - 1, 0);
-				state.set(setTeam, !isBlackTurn);
-				state.set(setTeam - 1, isBlackTurn);
+			int resetOpp = 127 - (oppIndex << 1);
+			int resetTeam = 127 - (index << 1);
+			int setTeam = 127 - (oppIndex << 1);
+			state.set(resetOpp, 0);
+			state.set(resetOpp - 1, 0);
+			state.set(resetTeam, 0);
+			state.set(resetTeam - 1, 0);
+			state.set(setTeam, !isBlackTurn);
+			state.set(setTeam - 1, isBlackTurn);
 
 
-				return state;
-			}
+			return state;
 		}
 		int biti = 127 - (next << 1);
 		auto nextState = state[biti] << 1 | state[biti - 1] << 0;
@@ -346,7 +358,6 @@ std::vector<std::bitset<128U>> logic::notationToState(const std::string& path, b
 		std::istringstream iss{ line };
 		iss >> turn;
 		*readTurn = (turn == 'b');
-		//std::cout << turn << std::endl;
 	}
 	while (std::getline(file, line)) {
 		std::string token;
@@ -357,9 +368,7 @@ std::vector<std::bitset<128U>> logic::notationToState(const std::string& path, b
 			char row, color;
 			int col;
 			ls >> row >> col >> color;
-			//std::cout << row << " " << col << " " << color;
 			int index = rowColToIndex(row, col);
-			//std::cout << " " << index << std::endl;
 			int bitIndex = 127 - (index << 1);
 			if (color == 'b') --bitIndex;
 			state.set(bitIndex);
@@ -376,4 +385,35 @@ int logic::rowColToIndex(char row, int col) {
 		index += board::ROW_NUMBER_MAP[i];
 	--col;
 	return index + (rowI < 4 ? (col - 9 + board::ROW_NUMBER_MAP[rowI]) : col);
+}
+
+std::string logic::printState(std::bitset<128U> state) {
+	std::string res;
+	auto slotIndex = 0u;
+	for (int i = 0; i < 9; ++i) {
+		unsigned int slotNumber = board::ROW_NUMBER_MAP[i];
+		auto space = 9u - slotNumber;
+		for (auto ss = 0u; ss < space; ++ss) {
+			res += ' ';
+		}
+		for (size_t j = 0; j < slotNumber; ++j) {
+			unsigned int bitIndex = 127 - slotIndex;
+			auto slotState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
+
+			
+			if (slotState == 0) {
+				res += '+';
+			}
+			else if (slotState == 1) {
+				res += '@';
+			}
+			else {
+				res += 'O';
+			}
+			slotIndex += 2;
+			res += ' ';
+		}
+		res += '\n';
+	}
+	return res;
 }
