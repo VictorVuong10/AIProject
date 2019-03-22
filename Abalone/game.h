@@ -60,6 +60,9 @@ public:
 
 	bool tryUnSelect(int index);
 
+	void setMaxMovesEditText(sf::String maxMoves);
+	void setMoveTimeLimitEditText(sf::String moveTimeLimit);
+
 	~game();
 
 private:
@@ -91,6 +94,22 @@ private:
 	bool isBlackTurn;
 	//this is not the real game time. Use storeSec plus clock time.
 	float storedSec;
+
+	sf::Text maxMovesTitle;
+	sf::RectangleShape maxMovesBox;
+	sf::Text maxMovesEditText;
+	sf::Text moveTimeLimitTitle;
+	sf::RectangleShape moveTimeLimitBox;
+	sf::Text moveTimeLimitEditText;
+	button* p1BlackBtn;
+	button* p1WhiteBtn;
+	button* p2BlackBtn;
+	button* p2WhiteBtn;
+	sf::Text nextMoveText;
+	void initMaxMoves();
+	void initMoveTimeLimit();
+	void initPlayerColorBtns();
+	void initNextMove();
 
 	void initAllEle();
 	void initboardSetupBtn();

@@ -33,6 +33,11 @@ sf::Text * button::getText() {
 	return &Text;
 }
 
+void button::setFillColor(sf::Color color)
+{
+	Text.setFillColor(color);
+}
+
 
 void button::show(sf::RenderWindow& window) {
 	window.draw(background);
