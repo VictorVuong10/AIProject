@@ -193,6 +193,7 @@ std::bitset<128U> logic::inlineMove(std::bitset<128U> state, action act, bool is
 				state.set(setTeam, !isBlackTurn);
 				state.set(setTeam - 1, isBlackTurn);
 
+
 				return state;
 			}
 		}
