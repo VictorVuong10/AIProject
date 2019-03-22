@@ -123,7 +123,75 @@ std::bitset<128U> logic::sideMove(std::bitset<128U> state, action act, bool isBl
 
 }
 
-std::bitset<128U> logic::inlineMove(std::bitset<128U> state, action act, bool isBlackTurn) {
+std::bitset<128U> logic::sideMoveValidating(std::bitset<128U>& state, action& act, bool isBlackTurn) {
+	int marbleCount = act.count;
+	int index = act.index;
+	int direction = act.direction;
+
+	int drr1 = (direction + 5) % 6;
+	int drr2 = (direction + 4) % 6;
+	int drr = drr1;
+
+	int next = -1;
+	for (int i = 0; i < marbleCount; ++i) {
+
+		next = MOVE_TABLE[index][direction];
+
+		int bitIndex = 127 - (index << 1);
+		auto indexState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
+
+		if (!indexState) {
+			if (i == 1) {
+				drr = drr2;
+				next = index;
+				int drrOpp = (direction + 3) % 6;
+				index = MOVE_TABLE[index][drrOpp];
+				if (index == -1)
+					return state;
+				int bitIndex = 127 - (index << 1);
+				auto nextState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
+				if (nextState & 2 ^ isBlackTurn << 1)
+					continue;
+				else
+					return state;
+			}
+			return state;
+		}
+
+		if (indexState & 1 ^ isBlackTurn << 0)
+			return state;
+		if (next != -1) {
+
+			int bitNextIndex = 127 - (next << 1);
+
+			if (state[bitNextIndex] || state[bitNextIndex - 1])
+				return state;
+
+		}
+		
+		index = MOVE_TABLE[index][drr];
+		if (index == -1)
+			return state;
+	}
+
+	index = act.index;
+	next = MOVE_TABLE[index][direction];
+	for (int i = 0; i < marbleCount; ++i) {
+		int bitIndex = 127 - (index << 1);
+		state.set(bitIndex, 0);
+		state.set(bitIndex - 1, 0);
+		if (next != -1) {
+			int bitNextIndex = 127 - (next << 1);
+			state.set(bitNextIndex, !isBlackTurn);
+			state.set(bitNextIndex - 1, isBlackTurn);
+			next = MOVE_TABLE[next][drr];
+		}
+		index = MOVE_TABLE[index][drr];
+	}
+	return state;
+}
+
+std::bitset<128U> logic::inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn) {
 	int marbleCount = act.count;
 	int index = act.index;
 	int direction = act.direction;
@@ -227,5 +295,28 @@ std::bitset<128U> logic::inlineMove(std::bitset<128U> state, action act, bool is
 }
 
 std::bitset<128U> logic::move(std::bitset<128U> state, action act, bool isBlackTurn) {
-	return act.count == 1? inlineMove(state, act, isBlackTurn) : sideMove(state, act, isBlackTurn);
+	return act.count == 1? inlineMove(state, act, isBlackTurn) : sideMoveValidating(state, act, isBlackTurn);
+}
+
+
+std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(std::bitset<128U> state, bool isBlackTurn) {
+	std::vector<std::pair<logic::action, std::bitset<128U>>> action_state{};
+
+	//count 1-3, index 0-60, direction 0-5
+	for (int index = 0; index < 61; ++index) {
+		int bitIndex = 127 - (index << 1);
+		auto curState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
+		if (curState & 2 ^ isBlackTurn << 1) {
+			for (int direction = 0; direction < 6; ++direction) {
+				for (int count = 1; count < 4; ++count) {
+					action act{ count, index, direction };
+					auto nstate = move(state, act, isBlackTurn);
+					if (nstate != state) {
+						action_state.push_back({ act, nstate });
+					}
+				}
+			}
+		}
+	}
+	return action_state;
 }

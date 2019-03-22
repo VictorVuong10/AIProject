@@ -8,6 +8,8 @@
 #include <ctime>
 #include <thread>
 #include <iostream>
+#include "logic.h"
+#include "game.h"
 
 using namespace std;
 sf::Mutex qmutex{};
@@ -42,8 +44,17 @@ queue<task*> mq{};
 //}
 
 int main() {
-	gui g{};
-	g.start();
+	//gui g{};
+	//g.start();
+
+	std::bitset<128U> state{ game::STANDARD_STR };
+	auto as = logic::getAllValidMove(state, 1);
+
+	std::cout << as.size() << std::endl;
+	for (auto v : as) {
+		std::cout << v.first.count << " " << v.first.index << " " << v.first.direction << std::endl;
+	}
+
 	return 0;
 }
 //

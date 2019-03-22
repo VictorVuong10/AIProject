@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bitset>
+#include <vector>
 #include <iostream>
 
 //Black - 01, White - 10
@@ -164,12 +165,15 @@ public:
 
 
 	~logic();
-	static std::bitset<128U> sideMove(std::bitset<128U> state, action act, bool isBlackTurn);
-	static std::bitset<128U> inlineMove(std::bitset<128U> state, action act, bool isBlackTurn);
+	
 	static std::bitset<128U> move(std::bitset<128U> state, action action, bool isBlackTurn);
-
+	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMove(std::bitset<128U> state, bool isBlackTurn);
 
 private:
 	logic();
+
+	static std::bitset<128U> sideMove(std::bitset<128U> state, action act, bool isBlackTurn);
+	static std::bitset<128U> sideMoveValidating(std::bitset<128U>& state, action& act, bool isBlackTurn);
+	static std::bitset<128U> inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
 };
 
