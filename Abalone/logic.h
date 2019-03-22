@@ -3,6 +3,9 @@
 #include <bitset>
 #include <vector>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include "board.h"
 
 //Black - 01, White - 10
 //biset use reverse order, use state 127 - index to access
@@ -169,9 +172,13 @@ public:
 	static std::bitset<128U> move(std::bitset<128U> state, action action, bool isBlackTurn);
 	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMove(std::bitset<128U> state, bool isBlackTurn);
 
+	static std::vector<std::bitset<128U>> notationToState(const std::string & path, bool * readTurn = 0);
+
+
 private:
 	logic();
 
+	static int rowColToIndex(char row, int col);
 	static std::bitset<128U> sideMove(std::bitset<128U> state, action act, bool isBlackTurn);
 	static std::bitset<128U> sideMoveValidating(std::bitset<128U>& state, action& act, bool isBlackTurn);
 	static std::bitset<128U> inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn);

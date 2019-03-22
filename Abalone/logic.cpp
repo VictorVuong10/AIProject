@@ -136,10 +136,15 @@ std::bitset<128U> logic::sideMoveValidating(std::bitset<128U>& state, action& ac
 	for (int i = 0; i < marbleCount; ++i) {
 
 		next = MOVE_TABLE[index][direction];
+		
+		//temporary not allow suicide
+		if (next == -1) {
+			return state;
+		}
 
 		int bitIndex = 127 - (index << 1);
 		auto indexState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
-
+		//slot empty
 		if (!indexState) {
 			if (i == 1) {
 				drr = drr2;
@@ -157,9 +162,10 @@ std::bitset<128U> logic::sideMoveValidating(std::bitset<128U>& state, action& ac
 			}
 			return state;
 		}
-
+		//different color
 		if (indexState & 1 ^ isBlackTurn << 0)
 			return state;
+
 		if (next != -1) {
 
 			int bitNextIndex = 127 - (next << 1);
@@ -204,8 +210,11 @@ std::bitset<128U> logic::inlineMove(std::bitset<128U>& state, action& act, bool 
 			return state;
 		int biti = 127 - (next << 1);
 		auto nextState = state[biti] << 1 | state[biti - 1] << 0;
-		//empty(valid)
+		//empty maybe (valid)
 		if (!nextState) {
+			//not moving anything(invalid)
+			if (sameColorCount == 0)
+				return state;
 			//create and return new state
 			/*std::bitset<128U> mask{ 0 };
 			std::bitset<128U> setMask{ 0 };
@@ -307,7 +316,7 @@ std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(
 	for (int index = 0; index < 61; ++index) {
 		int bitIndex = 127 - (index << 1);
 		auto curState = state[bitIndex] << 1 | state[bitIndex - 1] << 0;
-		if (curState & 2 ^ isBlackTurn << 1) {
+		if (curState && (curState & 2 ^ isBlackTurn << 1)) {
 			for (int direction = 0; direction < 6; ++direction) {
 				for (int count = 1; count < 4; ++count) {
 					action act{ count, index, direction };
@@ -320,4 +329,51 @@ std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(
 		}
 	}
 	return action_state;
+}
+
+std::vector<std::bitset<128U>> logic::notationToState(const std::string& path, bool* readTurn) {
+	std::ifstream file;
+	file.open(path);
+	if (file.fail()) {
+		std::cout << "FAILED TO OPEN " << path << std::endl;
+		return {};
+	}
+	std::vector<std::bitset<128U>> validStates;
+	std::string line;
+	if (readTurn) {
+		std::getline(file, line);
+		char turn;
+		std::istringstream iss{ line };
+		iss >> turn;
+		*readTurn = (turn == 'b');
+		//std::cout << turn << std::endl;
+	}
+	while (std::getline(file, line)) {
+		std::string token;
+		std::bitset<128U> state;
+		std::istringstream ols{ line };
+		while (std::getline(ols, token, ',')) {
+			std::istringstream ls{ token };
+			char row, color;
+			int col;
+			ls >> row >> col >> color;
+			//std::cout << row << " " << col << " " << color;
+			int index = rowColToIndex(row, col);
+			//std::cout << " " << index << std::endl;
+			int bitIndex = 127 - (index << 1);
+			if (color != 'b') --bitIndex;
+			state.set(bitIndex);
+		}
+		validStates.push_back(state);
+	}
+	return validStates;
+}
+
+int logic::rowColToIndex(char row, int col) {
+	auto rowI = 8u - row + 'A';
+	int index = 0;
+	for (auto i = 0u; i < rowI; ++i)
+		index += board::ROW_NUMBER_MAP[i];
+	--col;
+	return index + (rowI < 4 ? (col - 9 + board::ROW_NUMBER_MAP[rowI]) : col);
 }
