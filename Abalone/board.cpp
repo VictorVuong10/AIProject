@@ -27,8 +27,8 @@ void board::initAllSlots(float x, float y, float size) {
 		float ydiff = 2 * rowDiff * height;
 		float yinit = i < 4 ? y - ydiff : y + ydiff;
 		for (size_t j = 0; j < slotNumber; ++j) {
-			unsigned int bitIndex = 127 - slotIndex;
-			std::bitset<2U> slotState = boardState[bitIndex] << 1 | boardState[bitIndex - 1] << 0;
+			//slotState is reversed again
+			std::bitset<2U> slotState = boardState[slotIndex] << 1 | boardState[slotIndex + 1] << 0;
 			slot* s = new slot{ xinit, yinit, slotSize, slotState };
 			s->registerHandler(new std::function<void(sf::Event&)>{ [&, s, slotIndex](sf::Event e) {
 				auto sState = s->getState();
@@ -57,11 +57,11 @@ void board::unSelectAll() {
 
 void board::setState(std::bitset<128U> boardState)
 {
-	unsigned int stateIndex = 127;
+	unsigned int stateIndex = 0;
 	for (auto s : slots) {
-		std::bitset<2U> slotState = boardState[stateIndex] << 1 | boardState[stateIndex - 1] << 0;
+		std::bitset<2U> slotState = boardState[stateIndex] << 1 | boardState[stateIndex + 1] << 0;
 		s->setState(slotState);
-		stateIndex -= 2;
+		stateIndex += 2;
 	}
 }
 

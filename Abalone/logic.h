@@ -180,8 +180,7 @@ private:
 	logic();
 
 	static int rowColToIndex(char row, int col);
-	static std::bitset<128U> sideMove(std::bitset<128U> state, action act, bool isBlackTurn);
-	static std::bitset<128U> sideMoveValidating(std::bitset<128U>& state, action& act, bool isBlackTurn);
-	static std::bitset<128U> inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
+	static std::bitset<128U>& sideMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
+	static std::bitset<128U>& inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
 };
 

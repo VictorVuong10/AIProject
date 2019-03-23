@@ -13,8 +13,6 @@ class gui;
 class game : public IShowable, public virtual IClickable
 {
 	typedef struct {
-		bool player1IsHuman;
-		bool player2IsHuman;
 		std::bitset<128U> state;
 		float storedSec;
 		bool isBlackTurn;
@@ -132,6 +130,8 @@ private:
 	void setTimer();
 
 	void nextState(std::bitset<128U> state);
+
+	void setScoreFromState(std::bitset<128U> state);
 
 	
 

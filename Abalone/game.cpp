@@ -15,7 +15,7 @@
 		0101010101
 */
 
-const std::string game::STANDARD_STR = "10101010101010101010100000101010000000000000000000000000000000000000000000000000000000000001010100000101010101010101010101000000";
+const std::string game::STANDARD_STR = "00000010101010101010101010100000101010000000000000000000000000000000000000000000000000000000000001010100000101010101010101010101";
 
 /*
 		0000000000
@@ -28,7 +28,7 @@ const std::string game::STANDARD_STR = "1010101010101010101010000010101000000000
 	   010100001010
 		0000000000
 */
-const std::string game::GERMAN_DAISY_STR = "00000000001010000001011010100001010100101000000101000000000000000000000001010000101000010101001010100101000010100000000000000000";
+const std::string game::GERMAN_DAISY_STR = "00000000000000001010000001011010100001010100101000000101000000000000000000000001010000101000010101001010100101000010100000000000";
 
 /*
 		1010000101
@@ -41,7 +41,7 @@ const std::string game::GERMAN_DAISY_STR = "000000000010100000010110101000010101
 	   010101101010
 		0101001010
 */
-const std::string game::BELGAIN_DAISY_STR = "10100001011010100101010010100001010000000000000000000000000000000000000000000000000000000101001010000101011010100101001010000000";
+const std::string game::BELGAIN_DAISY_STR = "00000010100001011010100101010010100001010000000000000000000000000000000000000000000000000000000101001010000101011010100101001010";
 
 
 const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, BELGAIN_DAISY_STR };
@@ -185,7 +185,7 @@ void game::startGame() {
 		return;
 	}
 	if (gameProgress::NOT_STARTED == progress) {
-		gameState toBeSaved = { player1IsHuman, player2IsHuman, state, storedSec, isBlackTurn };
+		gameState toBeSaved = { state, storedSec, isBlackTurn };
 		history.push(toBeSaved);
 	}
 	progress = gameProgress::IN_PROGRESS;
@@ -220,6 +220,7 @@ void game::initUndoBtn()
 			gameState lastState = history.top();
 			state = lastState.state;
 			gameBoard->setState(state);
+			setScoreFromState(state);
 			storedSec = lastState.storedSec;
 			isBlackTurn = lastState.isBlackTurn;
 			clock.restart();
@@ -452,8 +453,7 @@ bool game::isInlineValid(unsigned short direction) {
 	do {
 		if (next == -1)
 			return true;
-		int biti = 127 - (next << 1);
-		auto nextState = state[biti] << 1 | state[biti - 1] << 0;
+		auto nextState = state[next << 1] << 1 | state[(next << 1) + 1] << 0;
 		if (!nextState)
 			return true;
 		if (nextState & 2 ^ isBlackTurn << 1)
@@ -470,8 +470,7 @@ bool game::isSideMoveValid(unsigned short direction) {
 		int next = logic::MOVE_TABLE[index][direction];
 		if (next == -1)
 			return false;
-		int biti = 127 - (next << 1);
-		if (state[biti] | state[biti - 1]) {
+		if (state[next << 1] | state[(next << 1) + 1]) {
 			return false;
 		}
 	}
@@ -499,9 +498,22 @@ void game::setTimer() {
 void game::nextState(std::bitset<128U> state) {
 	this->state = state;
 	gameBoard->setState(state);
-	gameState toBeSaved = { player1IsHuman, player2IsHuman, state, storedSec + clock.getElapsedTime().asSeconds(), isBlackTurn };
+	setScoreFromState(state);
+	gameState toBeSaved = { state, storedSec + clock.getElapsedTime().asSeconds(), isBlackTurn };
 	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << "seconds" << std::endl << std::endl;
 	history.push(toBeSaved);
+}
+
+void game::setScoreFromState(std::bitset<128U> state) {
+	auto whiteLost = 0u, blackLost = 0u;
+	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
+		whiteLost <<= 1;
+		blackLost <<= 1;
+		whiteLost |= state[j] << 0;
+		blackLost |= state[i] << 0     ;
+	}
+	blackLostText.setString("Black Lost: " + std::to_string(blackLost));
+	whiteLostText.setString("White Lost: " + std::to_string(whiteLost));
 }
 
 bool game::getIsBlackTurn() {

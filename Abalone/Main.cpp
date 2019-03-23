@@ -2,7 +2,7 @@
 
 #include "gui.h"
 
-void func(int num) {
+void runTestcase(int num) {
 	using namespace std;
 
 	cout << "Test Case " << num << endl;
@@ -46,20 +46,21 @@ int main() {
 	gui g{};
 	g.start();
 
-	using namespace std;
+	/*using namespace std;
 
-	/*bitset<128U> s{ game::STANDARD_STR };
+	bitset<128U> s{ game::STANDARD_STR };
 	auto v = logic::getAllValidMove(s, 1);
 
-	cout << v.size() << endl;*/
-	/*for (auto r : v) {
+	cout << v.size() << endl;
+	for (auto r : v) {
 		cout << r.first.count << " " << r.first.index << " " << r.first.direction << endl;
-	}*/
-	/*for (int i = 1; i <= 12; ++i) {
+	}
+	for (int i = 1; i <= 12; ++i) {
 		func(i);
-	}*/
+	}
+
 	int dummy;
-	cin >> dummy;
+	cin >> dummy;*/
 	return 0;
 }
 
