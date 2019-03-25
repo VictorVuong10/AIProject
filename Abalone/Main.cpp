@@ -11,6 +11,7 @@ void runTestcase(int num) {
 	auto input = logic::notationToState(path + "input", &isBlackTurn);
 	cout << logic::printState(input[0]);
 	auto generated = logic::getAllValidMove(input[0], isBlackTurn);
+	logic::writeOutputToFile(path + "output", generated);
 	auto output = logic::notationToState(path + "board");
 	auto outputSize = output.size();
 	cout << generated.size() << "/" << outputSize << endl;
@@ -43,8 +44,8 @@ void runTestcase(int num) {
 }
 
 int main() {
-	gui g{};
-	g.start();
+	/*gui g{};
+	g.start();*/
 
 	/*using namespace std;
 
@@ -54,13 +55,13 @@ int main() {
 	cout << v.size() << endl;
 	for (auto r : v) {
 		cout << r.first.count << " " << r.first.index << " " << r.first.direction << endl;
-	}
-	for (int i = 1; i <= 12; ++i) {
-		func(i);
+	}*/
+	for (int i = 1; i <= 1; ++i) {
+		runTestcase(i);
 	}
 
 	int dummy;
-	cin >> dummy;*/
+	std::cin >> dummy;
 	return 0;
 }
 

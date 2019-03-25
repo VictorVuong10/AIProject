@@ -168,7 +168,7 @@ std::bitset<128U>& logic::inlineMove(std::bitset<128U>& state, action& act, bool
 			state.set((oppIndex << 1) + 1, isBlackTurn);
 
 			//++score
-			auto scoreI = (isBlackTurn << 0) * 3 + 122;
+			/*auto scoreI = (isBlackTurn << 0) * 3 + 122;
 			auto max = scoreI + 3;
 			bool val = state[scoreI];
 			bool carry = val & 1;
@@ -177,7 +177,7 @@ std::bitset<128U>& logic::inlineMove(std::bitset<128U>& state, action& act, bool
 				val = state[++scoreI];
 				state.set(scoreI, val ^ carry);
 				carry &= val;
-			}
+			}*/
 
 			return state;
 		}
@@ -270,6 +270,38 @@ int logic::rowColToIndex(char row, int col) {
 		index += board::ROW_NUMBER_MAP[i];
 	--col;
 	return index + (rowI < 4 ? (col - 9 + board::ROW_NUMBER_MAP[rowI]) : col);
+}
+
+std::string logic::stateToNotation(std::bitset<128U> state) {
+	std::string res;
+	auto stateIndex = 0u;
+	for (auto row = 0u; row < 9; ++row) {
+		char rowChar = 8u - row + 'A';
+		auto colNum = board::ROW_NUMBER_MAP[row];
+		for (auto col = 0u; col < colNum; ++col) {
+			bool white = state[stateIndex];
+			if (white || state[stateIndex + 1]) {
+				auto rCol = row < 4 ? 10 - colNum + col : col + 1;
+				res += (rowChar + std::to_string(rCol) + (white ? "w" : "b") + " ");
+			}
+			stateIndex += 2;
+		}
+	}
+	return res.substr(0, res.size() - 1);
+}
+
+void logic::writeOutputToFile(const std::string& path, std::vector<std::pair<action, std::bitset<128U>>> states) {
+	std::ofstream file;
+	file.open(path);
+	if (file.fail()) {
+		std::cout << "FAILED TO OPEN " << path << std::endl;
+		return;
+	}
+	for (auto i = 0u; i < states.size(); ++i) {
+		auto stateStr = stateToNotation(states[i].second);
+		file << stateStr;
+		file << std::endl;
+	}
 }
 
 std::string logic::printState(std::bitset<128U> state) {

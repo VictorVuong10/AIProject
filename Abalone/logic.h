@@ -173,6 +173,8 @@ public:
 	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMove(std::bitset<128U> state, bool isBlackTurn);
 
 	static std::vector<std::bitset<128U>> notationToState(const std::string & path, bool * readTurn = 0);
+	static std::string stateToNotation(std::bitset<128U> state);
+	static void writeOutputToFile(const std::string & path, std::vector<std::pair<action, std::bitset<128U>>> states);
 	static std::string printState(std::bitset<128U> state);
 
 

@@ -505,15 +505,19 @@ void game::nextState(std::bitset<128U> state) {
 }
 
 void game::setScoreFromState(std::bitset<128U> state) {
-	auto whiteLost = 0u, blackLost = 0u;
-	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
+	auto white = 0u, black = 0u;
+	/*for (auto i = 124u, j = 127u; i > 121; --i, --j) {
 		whiteLost <<= 1;
 		blackLost <<= 1;
 		whiteLost |= state[j] << 0;
 		blackLost |= state[i] << 0     ;
+	}*/
+	for (auto i = isBlackTurn << 0, j = !isBlackTurn << 0; i < 122; i += 2, j += 2) {
+		if (state[i]) ++black;
+		if (state[j]) ++white;
 	}
-	blackLostText.setString("Black Lost: " + std::to_string(blackLost));
-	whiteLostText.setString("White Lost: " + std::to_string(whiteLost));
+	blackLostText.setString("Black Lost: " + std::to_string(14 - white));
+	whiteLostText.setString("White Lost: " + std::to_string(14 - black));
 }
 
 bool game::getIsBlackTurn() {
