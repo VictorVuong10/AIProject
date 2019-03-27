@@ -45,46 +45,43 @@ void gui::start()
 			if (event.type == sf::Event::MouseButtonPressed) {
 				_game->click(event);
 			}
-			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.mouseButton.x > 1000 && event.mouseButton.x < 1170 && event.mouseButton.y < 455 && event.mouseButton.y > 420)
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
-				inMoveTimeLimit = false;
-				inMoveTimeLimit2 = false;
-				inMaxMoves = true;
+				if (event.mouseButton.x > 1000 && event.mouseButton.x < 1170)
+				{
+					if (event.mouseButton.y < 455 && event.mouseButton.y > 420)
+					{
+						inMaxMoves = true;
+						inMoveTimeLimit = false;
+						inMoveTimeLimit2 = false;
+					}
+					if (event.mouseButton.y < 535 && event.mouseButton.y > 500)
+					{
+						inMaxMoves = false;
+						inMoveTimeLimit = true;
+						inMoveTimeLimit2 = false;
+					}
+					if (event.mouseButton.y < 610 && event.mouseButton.y > 580)
+					{
+						inMaxMoves = false;
+						inMoveTimeLimit = false;
+						inMoveTimeLimit2 = true;
+					}
+				}
 			}
-			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.mouseButton.x > 1000 && event.mouseButton.x < 1170 && event.mouseButton.y < 535 && event.mouseButton.y > 500)
-			{
-				inMaxMoves = false;
-				inMoveTimeLimit2 = false;
-				inMoveTimeLimit = true;
-			}
-			if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.mouseButton.x > 1000 && event.mouseButton.x < 1170 && event.mouseButton.y < 610 && event.mouseButton.y > 580)
-			{
-				inMaxMoves = false;
-				inMoveTimeLimit = false;
-				inMoveTimeLimit2 = true;
-			}
-			if (event.type == sf::Event::TextEntered && inMaxMoves)
+			// && _game.progress == game::NOT_STARTED
+			if (event.type == sf::Event::TextEntered)
 			{
 				if (event.text.unicode < 128)
 				{
-					_game->setMaxMovesEditText(event.text.unicode);
+					if(inMaxMoves)
+						_game->setMaxMovesEditText(event.text.unicode);
+					if(inMoveTimeLimit)
+						_game->setMoveTimeLimitEditText(event.text.unicode);
+					if(inMoveTimeLimit2)
+						_game->setMoveTimeLimitEditText2(event.text.unicode);
 				}
 			}
-			if (event.type == sf::Event::TextEntered && inMoveTimeLimit)
-			{
-				if (event.text.unicode < 128)
-				{
-					_game->setMoveTimeLimitEditText(event.text.unicode);
-				}
-			}
-			if (event.type == sf::Event::TextEntered && inMoveTimeLimit2)
-			{
-				if (event.text.unicode < 128)
-				{
-					_game->setMoveTimeLimitEditText2(event.text.unicode);
-				}
-			}
-
 		}
 		executeCallback();
 

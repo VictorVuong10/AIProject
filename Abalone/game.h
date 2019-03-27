@@ -151,6 +151,11 @@ private:
 	void initLog();
 	void setTimer();
 	void setMoveTimer();
+	void setUpText(sf::Text& textElement, std::string text, int x, int y);
+	void setUpTimer(sf::Text& timer, int x, int y, int timeLimit, std::string text);
+	void setUpTextBox(sf::Text& textElement, sf::RectangleShape& boxElement, sf::Text& titleElement, int x, int y, std::string title);
+
+	//gameProgress getProgress();
 
 	void nextState(std::bitset<128U> state);
 
