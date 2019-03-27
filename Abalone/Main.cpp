@@ -44,8 +44,8 @@ void runTestcase(int num) {
 }
 
 int main() {
-	/*gui g{};
-	g.start();*/
+	gui g{};
+	g.start();
 
 	/*using namespace std;
 

@@ -235,6 +235,8 @@ void game::initResetBtn() {
 	auto handler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
 			if (progress == gameProgress::NOT_STARTED)
 				return;
+			// Here's the test
+			stopGame();
 			progress = gameProgress::NOT_STARTED;
 			history = {};
 			state = std::bitset<128U>{ INIT_STATES[EMPTY] };
@@ -493,8 +495,6 @@ void game::setTimer() {
 	}
 }
 
-
-
 void game::nextState(std::bitset<128U> state) {
 	this->state = state;
 	gameBoard->setState(state);
@@ -518,6 +518,31 @@ void game::setScoreFromState(std::bitset<128U> state) {
 	}
 	blackLostText.setString("Black Lost: " + std::to_string(14 - white));
 	whiteLostText.setString("White Lost: " + std::to_string(14 - black));
+}
+
+void game::stopGame()
+{
+	// 1. Check score
+
+	// 2. Sum time taken by each player
+	double blackTotalTime = 0.0;
+	double whiteTotalTime = 0.0;
+
+	for (int i = 0; i < history.size(); i++) {
+		gameState thisTurn = history.top();
+		if (thisTurn.isBlackTurn) {
+			blackTotalTime += thisTurn.storedSec;
+		}
+		else {
+			whiteTotalTime += thisTurn.storedSec;
+		}
+		history.pop();
+	}
+
+	// 3. Compare time
+	std::cout << "Black took " << blackTotalTime << " seconds to move." << std::endl;
+	std::cout << "White took " << whiteTotalTime << " seconds to move." << std::endl;
+	std::cout << (blackTotalTime < whiteTotalTime ? "Black" : "White") << " wins!" << std::endl;
 }
 
 bool game::getIsBlackTurn() {
@@ -605,6 +630,8 @@ void game::setMoveTimeLimitEditText(sf::String moveTimeLimit)
 	temp.append(moveTimeLimit.toAnsiString());
 	moveTimeLimitEditText.setString(temp);
 }
+
+
 
 void game::initMoveTimeLimit()
 {

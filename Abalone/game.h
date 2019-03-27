@@ -60,6 +60,7 @@ public:
 
 	void setMaxMovesEditText(sf::String maxMoves);
 	void setMoveTimeLimitEditText(sf::String moveTimeLimit);
+	void stopGame();
 
 	~game();
 
