@@ -656,6 +656,8 @@ void game::setMaxMovesEditText(sf::String maxMoves)
 	try
 	{
 		maxMovesPerPlayer = std::stoi(temp);
+		moveTimerWhite.setString("Moves: " + ((maxMovesPerPlayer - (movesMade / 2) > 0) ? std::to_string(maxMovesPerPlayer - (movesMade / 2)) : "0"));
+		moveTimerBlack.setString("Moves: " + ((maxMovesPerPlayer - (movesMade / 2) > 0) ? std::to_string(maxMovesPerPlayer - (movesMade / 2)) : "0"));
 	}
 	catch (const std::exception& e)
 	{
@@ -670,11 +672,10 @@ void game::setMoveTimeLimitEditText(sf::String moveTimeLimit)
 	temp.append(moveTimeLimit.toAnsiString());
 	moveTimeLimitEditText.setString(temp);
 
-
 	try
 	{
-		//TODO does not throw error if digit entered first... will throw error if initial is alpha
 		moveTimeLimitBlack = std::stoi(temp);
+		timerTextBlack.setString("Black: " + std::to_string(moveTimeLimitBlack));
 	}
 	catch (const std::exception& e)
 	{
@@ -692,6 +693,7 @@ void game::setMoveTimeLimitEditText2(sf::String moveTimeLimit)
 	try
 	{
 		moveTimeLimitWhite = std::stoi(temp);
+		timerTextWhite.setString("White: " + std::to_string(moveTimeLimitWhite));
 	}
 	catch (const std::exception& e)
 	{
@@ -805,11 +807,9 @@ void game::initMoveTimer()
 void game::setTurnTimer() {
 	if (progress == gameProgress::IN_PROGRESS) {
 		//TODO timer restart is in button handlers of directionals, if we make an auto execute move we should move it there
-		//TODO need to store time on pause then start, should i update state to have timer turn, whoisblack, mvoe limit time limits?
 		auto time = turnTimer.getElapsedTime();
 		auto second = storedTurnSec + time.asSeconds();
 
-		//this is constantly running..?
 		if(isBlackTurn)
 			timerTextBlack.setString("Black: " + ((moveTimeLimitBlack - second) > 0 ? std::to_string(moveTimeLimitBlack - second) : "0.00"));
 		if(!isBlackTurn)
@@ -819,10 +819,9 @@ void game::setTurnTimer() {
 
 void game::setMoveTimer() {
 	if (progress == gameProgress::IN_PROGRESS) {
-		//ifmovesmade == 0 set the timers?
 		if(isBlackTurn)
 			moveTimerWhite.setString("Moves: " + ((maxMovesPerPlayer - (movesMade/2) > 0) ? std::to_string(maxMovesPerPlayer - (movesMade/2)) : "0"));
-		if(!isBlackTurn)
+		else
 			moveTimerBlack.setString("Moves: " + ((maxMovesPerPlayer - (movesMade/2) > 0) ? std::to_string(maxMovesPerPlayer - (movesMade / 2)) : "0"));
 	}
 }
