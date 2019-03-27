@@ -74,6 +74,7 @@ private:
 	resourceManager* rman;
 	board* gameBoard;
 	button* startBtn;
+	button* stopBtn;
 	button* pauseBtn;
 	button* undoBtn;
 	button* resetBtn;
@@ -138,6 +139,7 @@ private:
 	void initBoard();
 	void initTimer();
 	void initStartBtn();
+	void initStopBtn();
 	void startGame();
 	void initPauseBtn();
 	void initUndoBtn();

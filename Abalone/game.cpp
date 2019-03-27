@@ -63,6 +63,7 @@ game::~game()
 {
 	delete gameBoard;
 	delete startBtn;
+	delete stopBtn;
 	delete pauseBtn;
 	delete undoBtn;
 	delete resetBtn;
@@ -85,6 +86,7 @@ void game::click(sf::Event & e)
 		}
 	}
 	startBtn->click(e);
+	stopBtn->click(e);
 	pauseBtn->click(e);
 	undoBtn->click(e);
 	resetBtn->click(e);
@@ -100,6 +102,7 @@ void game::click(sf::Event & e)
 void game::show(sf::RenderWindow & window)
 {
 	startBtn->show(window);
+	stopBtn->show(window);
 	gameBoard->show(window);
 	pauseBtn->show(window);
 	undoBtn->show(window);
@@ -146,6 +149,7 @@ void game::initAllEle()
 	initBoard();
 	initTimer();
 	initStartBtn();
+	initStopBtn();
 	initPauseBtn();
 	initUndoBtn();
 	initResetBtn();
@@ -226,10 +230,31 @@ void game::initPauseBtn()
 	pauseBtn->registerHandler(handler);
 }
 
+void game::initStopBtn()
+{
+	stopBtn = new button{ 100, "stop", {50, 220}, sf::Color::Red };
+	auto handler = new std::function<void(sf::Event&)>
+	{
+		[&, this](sf::Event& e)
+		{
+			if (progress != gameProgress::IN_PROGRESS)
+				return;
+			this->progress = gameProgress::PAUSED;
+			this->storedSec += this->clock.getElapsedTime().asSeconds();
+			this->storedTurnSec += turnTimer.getElapsedTime().asSeconds();
+			std::cout << "Total time elapsed: " << clock.getElapsedTime().asSeconds() << std::endl;
+			std::cout << "Game has stopped. " << std::endl << std::endl;
+			stopGame();
+		}
+	};
+
+	stopBtn->registerHandler(handler);
+}
+
 void game::initUndoBtn()
 {
 	//need to update for my state variables
-	undoBtn = new button{ 100, "undo", {50, 220}, sf::Color::Red };
+	undoBtn = new button{ 100, "undo", {50, 280}, sf::Color::Red };
 	auto handler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
 			if (progress != gameProgress::IN_PROGRESS || history.size() < 2)
 				return;
@@ -250,12 +275,11 @@ void game::initUndoBtn()
 }
 
 void game::initResetBtn() {
-	resetBtn = new button{ 100, "reset", {50, 280}, sf::Color::Red };
+	resetBtn = new button{ 100, "reset", {50, 340}, sf::Color::Red };
 	auto handler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
 			if (progress == gameProgress::NOT_STARTED)
 				return;
 			// Here's the test
-			stopGame();
 			progress = gameProgress::NOT_STARTED;
 			history = {};
 			state = std::bitset<128U>{ INIT_STATES[EMPTY] };
@@ -529,7 +553,7 @@ void game::nextState(std::bitset<128U> state) {
 	gameBoard->setState(state);
 	setScoreFromState(state);
 	gameState toBeSaved = { state, storedSec + clock.getElapsedTime().asSeconds(), isBlackTurn };
-	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << "seconds" << std::endl << std::endl;
+	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << " seconds." << std::endl << std::endl;
 	history.push(toBeSaved);
 }
 
@@ -552,6 +576,8 @@ void game::setScoreFromState(std::bitset<128U> state) {
 void game::stopGame()
 {
 	// 1. Check score
+	int whiteScore;
+	int blackScore;
 
 	// 2. Sum time taken by each player
 	double blackTotalTime = 0.0;
@@ -561,8 +587,7 @@ void game::stopGame()
 		gameState thisTurn = history.top();
 		if (thisTurn.isBlackTurn) {
 			blackTotalTime += thisTurn.storedSec;
-		}
-		else {
+		} else {
 			whiteTotalTime += thisTurn.storedSec;
 		}
 		history.pop();
@@ -572,6 +597,10 @@ void game::stopGame()
 	std::cout << "Black took " << blackTotalTime << " seconds to move." << std::endl;
 	std::cout << "White took " << whiteTotalTime << " seconds to move." << std::endl;
 	std::cout << (blackTotalTime < whiteTotalTime ? "Black" : "White") << " wins!" << std::endl;
+
+	// Set base states so game cannot be restarted without reset.
+	history = {};
+	state = std::bitset<128U>{ INIT_STATES[EMPTY] };
 }
 
 bool game::getIsBlackTurn() {
