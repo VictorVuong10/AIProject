@@ -56,6 +56,7 @@ int main() {
 	for (auto r : v) {
 		cout << r.first.count << " " << r.first.index << " " << r.first.direction << endl;
 	}*/
+
 	for (int i = 1; i <= 1; ++i) {
 		runTestcase(i);
 	}

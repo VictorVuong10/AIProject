@@ -16,6 +16,7 @@ class game : public IShowable, public virtual IClickable
 		std::bitset<128U> state;
 		float storedSec;
 		bool isBlackTurn;
+		//need timesec?p1isblack?maxmoves?
 	} gameState;
 
 public:
@@ -61,6 +62,8 @@ public:
 	void setMaxMovesEditText(sf::String maxMoves);
 	void setMoveTimeLimitEditText(sf::String moveTimeLimit);
 	void stopGame();
+	void setMoveTimeLimitEditText2(sf::String moveTimeLimit);
+	void setTurnTimer();
 
 	~game();
 
@@ -93,22 +96,41 @@ private:
 	bool isBlackTurn;
 	//this is not the real game time. Use storeSec plus clock time.
 	float storedSec;
+	
 
 	sf::Text maxMovesTitle;
 	sf::RectangleShape maxMovesBox;
 	sf::Text maxMovesEditText;
 	sf::Text moveTimeLimitTitle;
+	sf::Text moveTimeLimitTitle2;
 	sf::RectangleShape moveTimeLimitBox;
+	sf::RectangleShape moveTimeLimitBox2;
 	sf::Text moveTimeLimitEditText;
-	button* p1BlackBtn;
-	button* p1WhiteBtn;
-	button* p2BlackBtn;
-	button* p2WhiteBtn;
+	sf::Text moveTimeLimitEditText2;
+	sf::Text p1IsBlackText;
+	button* p1IsBlackBtn;
 	sf::Text nextMoveText;
+	sf::Clock turnTimer;
+	sf::Text timerTextBlack;
+	sf::Text timerTextWhite;
+	sf::Text moveTimerBlack;
+	sf::Text moveTimerWhite;
+
+	bool isP1Black;
+
+	float storedTurnSec;
+	int movesMade;
+	int moveTimeLimitBlack;
+	int moveTimeLimitWhite;
+	int maxMovesPerPlayer;
+
 	void initMaxMoves();
 	void initMoveTimeLimit();
 	void initPlayerColorBtns();
 	void initNextMove();
+	void initBlackTimer();
+	void initWhiteTimer();
+	void initMoveTimer();
 
 	void initAllEle();
 	void initboardSetupBtn();
@@ -129,6 +151,7 @@ private:
 	bool isSideMoveValid(unsigned short direction);
 	void initLog();
 	void setTimer();
+	void setMoveTimer();
 
 	void nextState(std::bitset<128U> state);
 
