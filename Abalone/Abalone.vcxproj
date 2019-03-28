@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{5CEE62C7-82D3-4BA7-B3CB-A8903EA76628}</ProjectGuid>
     <RootNamespace>Abalone</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -144,6 +144,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="resourceManager.cpp" />
     <ClCompile Include="slot.cpp" />
+    <ClCompile Include="testcaseManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />
@@ -155,6 +156,7 @@
     <ClInclude Include="logic.h" />
     <ClInclude Include="resourceManager.h" />
     <ClInclude Include="slot.h" />
+    <ClInclude Include="testcaseManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

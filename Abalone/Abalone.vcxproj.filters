@@ -16,9 +16,6 @@
     <Filter Include="Source Files\Model">
       <UniqueIdentifier>{e5216eaa-6583-496b-a577-210c2c7acf15}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Service">
-      <UniqueIdentifier>{5766862a-110a-424a-ba2a-c17c2c80a899}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Model">
       <UniqueIdentifier>{0b1fe357-cd85-4403-a03a-75659ff0331e}</UniqueIdentifier>
     </Filter>
@@ -30,6 +27,9 @@
     </Filter>
     <Filter Include="Source Files\Interface">
       <UniqueIdentifier>{88574c2e-7497-46c8-91e7-827049d5fe19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Service">
+      <UniqueIdentifier>{5766862a-110a-424a-ba2a-c17c2c80a899}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -60,6 +60,9 @@
     <ClCompile Include="logic.cpp">
       <Filter>Source Files\Service</Filter>
     </ClCompile>
+    <ClCompile Include="testcaseManager.cpp">
+      <Filter>Source Files\Service</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files\Interface</Filter>
     </ClInclude>
     <ClInclude Include="logic.h">
+      <Filter>Header Files\Service</Filter>
+    </ClInclude>
+    <ClInclude Include="testcaseManager.h">
       <Filter>Header Files\Service</Filter>
     </ClInclude>
   </ItemGroup>

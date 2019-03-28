@@ -428,7 +428,7 @@ void game::initMoveBtn() {
 				isBlackTurn = !isBlackTurn;
 				nextState(tempState);
 				turnTimer.restart();
-				movesMade++;
+				++movesMade;
 			}
 			
 		} };

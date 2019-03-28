@@ -165,23 +165,14 @@ public:
 	logic(const logic &) = delete;
 	void operator=(const logic &) = delete;
 
-
-
-	~logic();
+	~logic() = default;
 	
 	static std::bitset<128U> move(std::bitset<128U> state, action action, bool isBlackTurn);
 	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMove(std::bitset<128U> state, bool isBlackTurn);
 
-	static std::vector<std::bitset<128U>> notationToState(const std::string & path, bool * readTurn = 0);
-	static std::string stateToNotation(std::bitset<128U> state);
-	static void writeOutputToFile(const std::string & path, std::vector<std::pair<action, std::bitset<128U>>> states);
-	static std::string printState(std::bitset<128U> state);
-
-
 private:
-	logic();
+	logic() = default;
 
-	static int rowColToIndex(char row, int col);
 	static std::bitset<128U>& sideMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
 	static std::bitset<128U>& inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
 };
