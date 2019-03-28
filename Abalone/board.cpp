@@ -72,6 +72,8 @@ bool board::checkClick(sf::Event & e)
 
 void board::click(sf::Event & e)
 {
+	if (game::gameProgress::IN_PROGRESS != _game->getProgress())
+		return;
 	if (checkClick(e)) {
 		for (auto s : slots) {
 			s->click(e);

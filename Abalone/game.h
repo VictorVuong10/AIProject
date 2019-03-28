@@ -59,6 +59,7 @@ public:
 	void backspace(sf::Event&) override;
 	
 	bool getIsBlackTurn();
+	gameProgress getProgress();
 
 	bool trySelect(int index);
 
@@ -73,8 +74,29 @@ public:
 	~game();
 
 private:
+	bool player1IsHuman;
+	bool player2IsHuman;
+	bool isP1Black;
+
+	int movesMade;
+	int moveTimeLimitBlack;
+	int moveTimeLimitWhite;
+	int maxMovesPerPlayer;
+
+	bool isBlackTurn;
+	std::bitset<128U> state;
+	gameProgress progress;
+	//this is not the real game time. Use storeSec plus clock time.
+	float storedSec;
+	float storedTurnSec;
 	std::stack<gameState> history;
 	std::vector<int> selectedIndex;
+
+
+	std::vector<IShowable*> showables;
+	std::vector<IClickable*> clickables;
+	std::vector<ITypeable*> typeables;
+
 	gui* ui;
 	resourceManager* rman;
 	board* gameBoard;
@@ -88,20 +110,14 @@ private:
 	button* belgainDaisyBtn;
 	button* player1ChangeBtn;
 	button* player2ChangeBtn;
+	button* player1IsBlackBtn;
 	button* moveBtn[6];
-	sf::Text boardSetupLabel;
-	sf::Text playerChangeLabel;
-	sf::Text timerText;
-	sf::Text blackLostText;
-	sf::Text whiteLostText;
+	textbox* boardSetupLabel;
+	textbox* playerChangeLabel;
+	textbox* timerText;
+	textbox* blackLostText;
+	textbox* whiteLostText;
 	sf::Clock clock;
-	bool player1IsHuman;
-	bool player2IsHuman;
-	std::bitset<128U> state;
-	gameProgress progress;
-	bool isBlackTurn;
-	//this is not the real game time. Use storeSec plus clock time.
-	float storedSec;
 	
 
 	sf::Text maxMovesTitle;
@@ -114,21 +130,12 @@ private:
 	sf::Text moveTimeLimitEditText;
 	sf::Text moveTimeLimitEditText2;
 	sf::Text p1IsBlackText;
-	button* p1IsBlackBtn;
 	sf::Text nextMoveText;
 	sf::Clock turnTimer;
 	sf::Text timerTextBlack;
 	sf::Text timerTextWhite;
 	sf::Text moveTimerBlack;
 	sf::Text moveTimerWhite;
-
-	bool isP1Black;
-
-	float storedTurnSec;
-	int movesMade;
-	int moveTimeLimitBlack;
-	int moveTimeLimitWhite;
-	int maxMovesPerPlayer;
 
 	void initMaxMoves();
 	void initMoveTimeLimit();

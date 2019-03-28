@@ -108,8 +108,8 @@ std::string testcaseManager::printState(std::bitset<128U> state) {
 	return res;
 }
 
-void testcaseManager::runAllTestcases() {
-	for (int i = 1; i <= TESTCASE_NUMBER; ++i) {
+void testcaseManager::runAllTestcases(int testcaseNum) {
+	for (int i = 1; i <= testcaseNum; ++i) {
 		runTestcase(i);
 	}
 }
@@ -129,6 +129,10 @@ void testcaseManager::runTestcase(int num) {
 	cout << generated.size() << "/" << outputSize << endl;
 	int matched = 0;
 	for (auto iter = generated.begin(); iter != generated.end();) {
+		auto temp = iter->second;
+		temp <<= 6;
+		temp >>= 6;
+		iter->second = temp;
 		auto iter2 = find(output.begin(), output.end(), iter->second);
 		if (iter2 == output.end()) {
 			++iter;

@@ -61,14 +61,8 @@ game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ IN
 
 game::~game()
 {
-	delete gameBoard;
-	delete startBtn;
-	delete stopBtn;
-	delete pauseBtn;
-	delete undoBtn;
-	delete resetBtn;
-	for (auto b : moveBtn) {
-		delete b;
+	for (auto s : showables) {
+		delete s;
 	}
 }
 
@@ -79,42 +73,16 @@ bool game::checkClick(sf::Event &)
 
 void game::click(sf::Event & e)
 {
-	if (progress == gameProgress::IN_PROGRESS) {
-		gameBoard->click(e);
-		for (auto b : moveBtn) {
-			b->click(e);
-		}
+	for (auto c : clickables) {
+		c->click(e);
 	}
-	startBtn->click(e);
-	stopBtn->click(e);
-	pauseBtn->click(e);
-	undoBtn->click(e);
-	resetBtn->click(e);
-	standardBtn->click(e);
-	germanDaisyBtn->click(e);
-	belgainDaisyBtn->click(e);
-	player1ChangeBtn->click(e);
-	player2ChangeBtn->click(e);
-	p1IsBlackBtn->click(e);
 }
 
 void game::show(sf::RenderWindow & window)
 {
-	startBtn->show(window);
-	stopBtn->show(window);
-	gameBoard->show(window);
-	pauseBtn->show(window);
-	undoBtn->show(window);
-	resetBtn->show(window);
-	standardBtn->show(window);
-	germanDaisyBtn->show(window);
-	belgainDaisyBtn->show(window);
-	player1ChangeBtn->show(window);
-	player2ChangeBtn->show(window);
-	window.draw(boardSetupLabel);
-	window.draw(playerChangeLabel);
-	window.draw(blackLostText);
-	window.draw(whiteLostText);
+	for (auto s : showables) {
+		s->show(window);
+	}
 	window.draw(maxMovesBox);
 	window.draw(maxMovesTitle);
 	window.draw(maxMovesEditText);
@@ -130,14 +98,9 @@ void game::show(sf::RenderWindow & window)
 	window.draw(p1IsBlackText);
 	window.draw(moveTimerWhite);
 	window.draw(moveTimerBlack);
-	p1IsBlackBtn->show(window);
 	setTimer();
 	setTurnTimer();
 	setMoveTimer();
-	window.draw(timerText);
-	for (auto b : moveBtn) {
-		b->show(window);
-	}
 	/*window.draw(log);*/
 }
 
@@ -175,12 +138,14 @@ void game::initAllEle()
 void game::initBoard()
 {
 	gameBoard = new board{ 600, 400, 300, this, state };
+	showables.push_back(gameBoard);
+	clickables.push_back(gameBoard);
 }
 
 void game::initTimer()
 {
-	setUpText(timerText, "Timer: 0:0", 450, 0);
-	timerText.setCharacterSize(50);
+	timerText = new textbox{ 50, {450, 0}, sf::Color::Red, "Timer: 0:0" };
+	showables.push_back(timerText);
 }
 
 void game::initStartBtn()
@@ -195,6 +160,8 @@ void game::initStartBtn()
 	};
 
 	startBtn->registerHandler(handler);
+	showables.push_back(startBtn);
+	clickables.push_back(startBtn);
 }
 
 void game::startGame() {
@@ -229,6 +196,8 @@ void game::initPauseBtn()
 		}
 	};
 	pauseBtn->registerHandler(handler);
+	showables.push_back(pauseBtn);
+	clickables.push_back(pauseBtn);
 }
 
 void game::initStopBtn()
@@ -250,6 +219,8 @@ void game::initStopBtn()
 	};
 
 	stopBtn->registerHandler(handler);
+	showables.push_back(stopBtn);
+	clickables.push_back(stopBtn);
 }
 
 void game::initUndoBtn()
@@ -273,6 +244,8 @@ void game::initUndoBtn()
 		}
 	};
 	undoBtn->registerHandler(handler);
+	showables.push_back(undoBtn);
+	clickables.push_back(undoBtn);
 }
 
 void game::initResetBtn() {
@@ -292,24 +265,26 @@ void game::initResetBtn() {
 			storedSec = 0;
 			isBlackTurn = true;
 			isP1Black = false;
-			timerText.setString("Timer: 0:0");
+			timerText->setText("Timer: 0:0");
 			moveTimeLimitBlack = 0;
 			moveTimeLimitWhite = 0;
 			moveTimeLimitEditText.setString("");
 			moveTimeLimitEditText2.setString("");
 			timerTextBlack.setString("P1: 0.0");
 			timerTextWhite.setString("P2: 0.0");
-			blackLostText.setString("Black Lost: 0");
-			whiteLostText.setString("White Lost: 0");
+			blackLostText->setText("Black Lost: 0");
+			whiteLostText->setText("White Lost: 0");
 			std::cout << "Game is reseted." << std::endl << std::endl;
 		}
 	};
 	resetBtn->registerHandler(handler);
+	showables.push_back(resetBtn);
+	clickables.push_back(resetBtn);
 }
 
 
 void game::initboardSetupBtn() {
-	setUpText(boardSetupLabel, "Choose board initial setup: ", 850, 50);
+	boardSetupLabel = new textbox{ 25, {850, 50}, sf::Color::Red, "Choose board initial setup: " };
 	standardBtn = new button{ 70, "Standard", {1000, 100}, sf::Color{ 165, 104, 24 } };
 	germanDaisyBtn = new button{ 70, "German Daisy", {1000, 140}, sf::Color{ 165, 104, 24 } };
 	belgainDaisyBtn = new button{ 70, "Belgain Daisy", {1000, 180}, sf::Color{ 165, 104, 24 } };
@@ -340,10 +315,17 @@ void game::initboardSetupBtn() {
 		}
 	};
 	belgainDaisyBtn->registerHandler(belgainDaisyHandler);
+	showables.push_back(boardSetupLabel);
+	showables.push_back(standardBtn);
+	showables.push_back(germanDaisyBtn);
+	showables.push_back(belgainDaisyBtn);
+	clickables.push_back(standardBtn);
+	clickables.push_back(germanDaisyBtn);
+	clickables.push_back(belgainDaisyBtn);
 }
 
 void game::initPlayerChangeBtn() {
-	setUpText(playerChangeLabel, "Change players: ", 950, 250);
+	playerChangeLabel = new textbox{ 25, {950, 250}, sf::Color::Red, "Change players: " };
 	player1ChangeBtn = new button{ 70, "Player 1: Human", {1000, 300}, sf::Color{ 91, 44, 6 } };
 	player2ChangeBtn = new button{ 70, "Player 2: AI", {1000, 340}, sf::Color{ 91, 44, 6 } };
 	player1ChangeBtn->getBackground().setSize({ 170, 35 });
@@ -366,12 +348,19 @@ void game::initPlayerChangeBtn() {
 		}
 	};
 	player2ChangeBtn->registerHandler(player2ChangeHandler);
+	showables.push_back(playerChangeLabel);
+	showables.push_back(player1ChangeBtn);
+	showables.push_back(player2ChangeBtn);
+	clickables.push_back(player1ChangeBtn);
+	clickables.push_back(player2ChangeBtn);
 }
 
 void game::initScore()
 {
-	setUpText(blackLostText, "Black Lost: 0", 520, 680);
-	setUpText(whiteLostText, "White Lost: 0", 520, 90);
+	blackLostText = new textbox{ 25, {520, 680}, sf::Color::Red, "Black Lost: 0" };
+	whiteLostText = new textbox{ 25, {520, 90}, sf::Color::Red, "White Lost: 0" };
+	showables.push_back(blackLostText);
+	showables.push_back(whiteLostText);
 }
 
 void game::initMoveBtn() {
@@ -421,6 +410,8 @@ void game::initMoveBtn() {
 				nextState(state);
 			});		*/
 			
+			if (progress != gameProgress::IN_PROGRESS)
+				return;
 			if (selectedIndex.size() == 0)
 				return;
 			bool moveType = isSideMove(i);
@@ -440,6 +431,8 @@ void game::initMoveBtn() {
 			
 		} };
 		moveBtn[i]->registerHandler(handler);
+		showables.push_back(moveBtn[i]);
+		clickables.push_back(moveBtn[i]);
 	}
 }
 
@@ -526,7 +519,7 @@ void game::setTimer() {
 		float tempSec = storedSec + second;
 		int min = static_cast<int>(tempSec) / 60;
 		int sec = static_cast<int>(tempSec) % 60;
-		timerText.setString("Timer: " + std::to_string(min) + ":" + std::to_string(sec));
+		timerText->setText("Timer: " + std::to_string(min) + ":" + std::to_string(sec));
 	}
 }
 
@@ -540,19 +533,22 @@ void game::nextState(std::bitset<128U> state) {
 }
 
 void game::setScoreFromState(std::bitset<128U> state) {
-	auto white = 0u, black = 0u;
-	/*for (auto i = 124u, j = 127u; i > 121; --i, --j) {
+	auto whiteLost = 0u, blackLost = 0u;
+	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
 		whiteLost <<= 1;
 		blackLost <<= 1;
 		whiteLost |= state[j] << 0;
-		blackLost |= state[i] << 0     ;
-	}*/
-	for (auto i = isBlackTurn << 0, j = !isBlackTurn << 0; i < 122; i += 2, j += 2) {
+		blackLost |= state[i] << 0;
+	}
+	blackLostText->setText("Black Lost: " + std::to_string(blackLost));
+	whiteLostText->setText("White Lost: " + std::to_string(whiteLost));
+	/*for (auto i = isBlackTurn << 0, j = !isBlackTurn << 0; i < 122; i += 2, j += 2) {
 		if (state[i]) ++black;
 		if (state[j]) ++white;
 	}
-	blackLostText.setString("Black Lost: " + std::to_string(14 - white));
-	whiteLostText.setString("White Lost: " + std::to_string(14 - black));
+	blackLostText.setString("Black Lost: " + std::to_string((14 - white)));
+	whiteLostText.setString("White Lost: " + std::to_string((14 - black)));
+	*/
 }
 
 void game::stopGame()
@@ -565,7 +561,7 @@ void game::stopGame()
 	double blackTotalTime = 0.0;
 	double whiteTotalTime = 0.0;
 
-	for (int i = 0; i < history.size(); i++) {
+	for (int i = 0u; i < history.size(); i++) {
 		gameState thisTurn = history.top();
 		if (thisTurn.isBlackTurn) {
 			blackTotalTime += thisTurn.storedSec;
@@ -587,6 +583,11 @@ void game::stopGame()
 
 bool game::getIsBlackTurn() {
 	return isBlackTurn;
+}
+
+game::gameProgress game::getProgress()
+{
+	return progress;
 }
 
 bool game::trySelect(int index) {
@@ -756,8 +757,8 @@ void game::initMoveTimeLimit()
 void game::initPlayerColorBtns()
 {
 	setUpText(p1IsBlackText, "P1 Black?", 945, 630);
-	p1IsBlackBtn = new button{80, "Yes", {1085, 630}, sf::Color::Black };
-	p1IsBlackBtn->setFillColor(sf::Color::White);
+	player1IsBlackBtn = new button{80, "Yes", {1085, 630}, sf::Color::Black };
+	player1IsBlackBtn->setFillColor(sf::Color::White);
 
 	auto handler = new std::function<void(sf::Event&)>
 	{
@@ -765,13 +766,14 @@ void game::initPlayerColorBtns()
 		{
 			if (progress == game::NOT_STARTED)
 			{
-			isP1Black = !isP1Black;
-			(isP1Black) ? p1IsBlackBtn->setText("Yes") : p1IsBlackBtn->setText("No");
+				isP1Black = !isP1Black;
+				(isP1Black) ? player1IsBlackBtn->setText("Yes") : player1IsBlackBtn->setText("No");
 			}
 		}
 	};
-	p1IsBlackBtn->registerHandler(handler);
-
+	player1IsBlackBtn->registerHandler(handler);
+	showables.push_back(player1IsBlackBtn);
+	clickables.push_back(player1IsBlackBtn);
 }
 
 void game::initNextMove()

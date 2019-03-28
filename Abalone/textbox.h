@@ -7,7 +7,7 @@ class textbox : public IShowable
 {
 public:
 	textbox() = default;
-	textbox(unsigned int size, sf::Vector2f location, sf::Color color = sf::Color::Black);
+	textbox(unsigned int size, sf::Vector2f location, sf::Color color = sf::Color::Black, std::string content = "");
 	~textbox() = default;
 
 	void show(sf::RenderWindow& window) override;

@@ -6,7 +6,10 @@
 
 int main() {
 
-	//testcaseManager::runAllTestcases();
+	int testcaseNum;
+	std::cout << "please enter how many test cases you want to run: " << std::endl;
+	std::cin >> testcaseNum;
+	testcaseManager::runAllTestcases(testcaseNum);
 	gui g{};
 	g.start();
 

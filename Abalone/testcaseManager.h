@@ -9,7 +9,7 @@
 class testcaseManager
 {
 public:
-	static constexpr unsigned int TESTCASE_NUMBER = 16;
+	static constexpr unsigned int TESTCASE_NUMBER = 1000;
 
 	~testcaseManager() = default;
 
@@ -21,7 +21,9 @@ public:
 	static void writeOutputToFile(const std::string & path, std::vector<std::pair<logic::action, std::bitset<128U>>> states);
 	static std::string printState(std::bitset<128U> state);
 
-	static void runAllTestcases();
+	static void runAllTestcases(int testcaseNum);
+
+	//static void runAllTestcases();
 
 	static void runTestcase(int num);
 	

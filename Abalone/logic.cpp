@@ -157,7 +157,7 @@ std::bitset<128U>& logic::inlineMove(std::bitset<128U>& state, action& act, bool
 			state.set((oppIndex << 1) + 1, isBlackTurn);
 
 			//++score
-			/*auto scoreI = (isBlackTurn << 0) * 3 + 122;
+			auto scoreI = (isBlackTurn << 0) * 3 + 122;
 			auto max = scoreI + 3;
 			bool val = state[scoreI];
 			bool carry = val & 1;
@@ -166,7 +166,7 @@ std::bitset<128U>& logic::inlineMove(std::bitset<128U>& state, action& act, bool
 				val = state[++scoreI];
 				state.set(scoreI, val ^ carry);
 				carry &= val;
-			}*/
+			}
 
 			return state;
 		}
