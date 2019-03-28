@@ -4,8 +4,8 @@
 
 board::board(float x, float y, float size, game* game, std::bitset<128U> boardState) : _game{game}
 {
-	this->boardState = boardState;
-	bg = slot::buildHexagon(x, y, size, sf::Color{ 165, 104, 24 });
+	this->boardState = boardState; 
+	bg = slot::buildHexagon(x, y, size, sf::Color{ 95,159,185 });
 	initAllSlots(x, y, size);
 }
 

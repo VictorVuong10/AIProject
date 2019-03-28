@@ -1,7 +1,7 @@
 #include "slot.h"
 
-const sf::Color slot::normalColor{ 91, 44, 6 };
-const sf::Color slot::selectedColor{ 38, 183, 127 };
+const sf::Color slot::normalColor{ 36,123,160 };
+const sf::Color slot::selectedColor{ 255,22,84 };
 
 slot::slot(float x, float y, float size, std::bitset<2U> state) : marble(size * 0.8f), selected(false)
 {
