@@ -96,7 +96,6 @@ void game::click(sf::Event & e)
 	player1ChangeBtn->click(e);
 	player2ChangeBtn->click(e);
 	p1IsBlackBtn->click(e);
-
 }
 
 void game::show(sf::RenderWindow & window)
@@ -140,6 +139,14 @@ void game::show(sf::RenderWindow & window)
 		b->show(window);
 	}
 	/*window.draw(log);*/
+}
+
+void game::type(sf::Event & e)
+{
+}
+
+void game::backspace(sf::Event & e)
+{
 }
 
 void game::initAllEle()

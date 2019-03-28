@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClCompile Include="board.cpp" />
     <ClCompile Include="button.cpp" />
+    <ClCompile Include="editText.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="gui.cpp" />
     <ClCompile Include="IClickable.cpp" />
@@ -145,18 +146,22 @@
     <ClCompile Include="resourceManager.cpp" />
     <ClCompile Include="slot.cpp" />
     <ClCompile Include="testcaseManager.cpp" />
+    <ClCompile Include="textbox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />
     <ClInclude Include="button.h" />
+    <ClInclude Include="editText.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="gui.h" />
     <ClInclude Include="IClickable.h" />
     <ClInclude Include="IShowable.h" />
+    <ClInclude Include="ITypeable.h" />
     <ClInclude Include="logic.h" />
     <ClInclude Include="resourceManager.h" />
     <ClInclude Include="slot.h" />
     <ClInclude Include="testcaseManager.h" />
+    <ClInclude Include="textbox.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

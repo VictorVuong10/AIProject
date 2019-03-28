@@ -5,12 +5,15 @@
 #include <bitset>
 #include <set>
 #include <stack>
+#include "textbox.h"
+#include "editText.h"
 #include "button.h"
 #include "board.h"
 #include "logic.h"
+#include "ITypeable.h"
 
 class gui;
-class game : public IShowable, public virtual IClickable
+class game : public IShowable, public virtual IClickable, public ITypeable
 {
 	typedef struct {
 		std::bitset<128U> state;
@@ -52,6 +55,8 @@ public:
 	bool checkClick(sf::Event&) override;
 	void click(sf::Event&) override;
 	void show(sf::RenderWindow& window) override;
+	void type(sf::Event&) override;
+	void backspace(sf::Event&) override;
 	
 	bool getIsBlackTurn();
 
@@ -163,8 +168,6 @@ private:
 	void nextState(std::bitset<128U> state);
 
 	void setScoreFromState(std::bitset<128U> state);
-
-	
 
 };
 

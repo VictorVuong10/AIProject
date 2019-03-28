@@ -39,9 +39,6 @@ void gui::start()
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
-			if (event.type == sf::Event::KeyPressed) {
-
-			}
 			if (event.type == sf::Event::MouseButtonPressed) {
 				_game->click(event);
 			}
@@ -72,8 +69,12 @@ void gui::start()
 			// && _game.progress == game::NOT_STARTED
 			if (event.type == sf::Event::TextEntered)
 			{
-				if (event.text.unicode < 128)
+				if (event.text.unicode == '\b') {
+					_game->backspace(event);
+				}
+				else if (event.text.unicode < 128)
 				{
+					_game->type(event);
 					if(inMaxMoves)
 						_game->setMaxMovesEditText(event.text.unicode);
 					if(inMoveTimeLimit)
