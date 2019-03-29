@@ -169,6 +169,7 @@ public:
 	
 	static std::bitset<128U> move(std::bitset<128U> state, action action, bool isBlackTurn);
 	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMove(std::bitset<128U> state, bool isBlackTurn);
+	static sf::Vector2u getScoreFromState(std::bitset<128U>& state);
 
 private:
 	logic() = default;

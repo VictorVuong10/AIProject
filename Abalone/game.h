@@ -11,6 +11,7 @@
 #include "board.h"
 #include "logic.h"
 #include "ITypeable.h"
+#include "automata.h"
 
 class gui;
 class game : public IShowable, public virtual IClickable, public ITypeable
@@ -65,7 +66,10 @@ private:
 
 	bool player1IsHuman;
 	bool player2IsHuman;
-	bool isP1Black;
+	bool player1IsBlack;
+
+	automata* player1;
+	automata* player2;
 
 	int movesMade;
 	int moveTimeLimitBlack;
@@ -145,6 +149,7 @@ private:
 	void resetGame();
 	void stopGame();
 	void move(unsigned short direction);
+	void automataMove();
 	void nextState(std::bitset<128U> state);
 
 	logic::action makeAction(unsigned short direction, bool isSideMove);
@@ -159,7 +164,7 @@ private:
 
 	void extractPropertyNDisplay(textbox * text, editText * editText, int& property, std::string label);
 	void setScoreFromState(std::bitset<128U>& state);
-	sf::Vector2u getScoreFromState(std::bitset<128U>& state);
+	
 
 
 };

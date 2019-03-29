@@ -217,3 +217,15 @@ std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(
 	}
 	return action_state;
 }
+
+
+sf::Vector2u logic::getScoreFromState(std::bitset<128U>& state) {
+	auto whiteLost = 0u, blackLost = 0u;
+	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
+		whiteLost <<= 1;
+		blackLost <<= 1;
+		whiteLost |= state[j] << 0;
+		blackLost |= state[i] << 0;
+	}
+	return { blackLost, whiteLost };
+}

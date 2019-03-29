@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="automata.cpp" />
     <ClCompile Include="board.cpp" />
     <ClCompile Include="button.cpp" />
     <ClCompile Include="editText.cpp" />
@@ -149,6 +150,7 @@
     <ClCompile Include="textbox.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="automata.h" />
     <ClInclude Include="board.h" />
     <ClInclude Include="button.h" />
     <ClInclude Include="editText.h" />

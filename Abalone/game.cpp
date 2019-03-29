@@ -329,24 +329,7 @@ void game::initMoveBtn() {
 	for (int i = 0; i < 6; ++i) {
 		moveBtn[i]->getBackground().setSize({ 60, 50 });
 		auto handler = new std::function<void(sf::Event&)>{ [&, i](sf::Event& e) {
-			/*ui->asyncAwait<std::bitset<128U>>([&, i] {
-				
-				std::bitset<128U> nstate{ game::STANDARD_STR };
-				int minIndex = 62;
-				for (auto index : selectedIndex) {
-					if (index < minIndex) {
-						minIndex = index;
-					}
-				}
-				std::cout << "selected number: " << selectedIndex.size()
-					<< " Index: " << minIndex << " direction: " << i << std::endl;
-
-				std::this_thread::sleep_for(std::chrono::seconds{ 2 });
-				return nstate << (i * 2);
-			}, [&](std::bitset<128U> state) {
-				
-				nextState(state);
-			});		*/
+			
 			
 			move(i);
 			
@@ -399,8 +382,8 @@ void game::initPlayerColorBtns()
 		{
 			if (progress == game::NOT_STARTED)
 			{
-				isP1Black = !isP1Black;
-				(isP1Black) ? player1IsBlackBtn->setText("Yes") : player1IsBlackBtn->setText("No");
+				player1IsBlack = !player1IsBlack;
+				(player1IsBlack) ? player1IsBlackBtn->setText("Yes") : player1IsBlackBtn->setText("No");
 			}
 		}
 	};
@@ -445,8 +428,17 @@ void game::startGame() {
 		extractPropertyNDisplay(moveCounterWhite, maxMovesEditText, maxMovesPerPlayer, "Moves: ");
 		extractPropertyNDisplay(timerTextBlack, moveTimeLimitEditText, moveTimeLimitBlack, "Black: ");
 		extractPropertyNDisplay(timerTextWhite, moveTimeLimitEditText2, moveTimeLimitWhite, "White: ");
+		if (!player1IsHuman) {
+			player1 = new automata{};
+		}
+		if (!player2IsHuman) {
+			player2 = new automata{};
+		}
 		gameState toBeSaved = { state, storedSec, isBlackTurn };
 		history.push(toBeSaved);
+		if (player1IsHuman || player2IsHuman) {
+			automataMove();
+		}
 	}
 	progress = gameProgress::IN_PROGRESS;
 
@@ -465,7 +457,7 @@ void game::stopGame()
 	std::cout << "Total time elapsed: " << clock.getElapsedTime().asSeconds() << std::endl;
 	std::cout << "Game has stopped. " << std::endl << std::endl;
 	// 1. Check score
-	auto scores = getScoreFromState(state);
+	auto scores = logic::getScoreFromState(state);
 
 	// 2. Sum time taken by each player
 	double blackTotalTime = 0.0;
@@ -550,15 +542,53 @@ void game::move(unsigned short direction) {
 		gameBoard->unSelectAll();
 		selectedIndex.clear();
 		auto tempState = logic::move(state, action, isBlackTurn);
-		++movesMade;
-		setMoveCount();
-		isBlackTurn = !isBlackTurn;
+		
 		nextState(tempState);
-		turnTimer.restart();
+		if (player1IsHuman || player2IsHuman) {
+			automataMove();
+		}
+	}
+}
+
+void game::automataMove() {
+
+	//player 1 move
+	if (isBlackTurn ^ player1IsBlack) {
+		if (!player1IsHuman) {
+			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
+
+				auto actionState = player1->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
+					player1IsBlack ? moveTimeLimitBlack : moveTimeLimitWhite);
+
+				return actionState;
+			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
+
+				nextState(actionState.second);
+			});
+		}
+	}
+	//player 2 move
+	else {
+		if (!player2IsHuman) {
+			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
+
+				auto actionState = player2->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
+					player1IsBlack ? moveTimeLimitWhite : moveTimeLimitBlack);
+
+				return actionState;
+			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
+
+				nextState(actionState.second);
+			});
+		}
 	}
 }
 
 void game::nextState(std::bitset<128U> state) {
+	++movesMade;
+	setMoveCount();
+	isBlackTurn = !isBlackTurn;
+	turnTimer.restart();
 	this->state = state;
 	gameBoard->setState(state);
 	setScoreFromState(state);
@@ -578,20 +608,9 @@ void game::nextState(std::bitset<128U> state) {
 #pragma region helpers
 
 void game::setScoreFromState(std::bitset<128U>& state) {
-	auto scores = getScoreFromState(state);
+	auto scores = logic::getScoreFromState(state);
 	blackLostText->setText("Black Lost: " + std::to_string(scores.x));
 	whiteLostText->setText("White Lost: " + std::to_string(scores.y));
-}
-
-sf::Vector2u game::getScoreFromState(std::bitset<128U>& state) {
-	auto whiteLost = 0u, blackLost = 0u;
-	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
-		whiteLost <<= 1;
-		blackLost <<= 1;
-		whiteLost |= state[j] << 0;
-		blackLost |= state[i] << 0;
-	}
-	return { blackLost, whiteLost };
 }
 
 void game::extractPropertyNDisplay(textbox * text, editText * editText, int& property, std::string label)
