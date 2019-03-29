@@ -11,8 +11,11 @@ public:
 	~textbox() = default;
 
 	void show(sf::RenderWindow& window) override;
-	sf::Text& getText();
+
+	std::string getText();
 	void setText(std::string);
+
+	sf::Text& getSfText();
 
 private:
 	sf::Text text;

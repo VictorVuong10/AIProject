@@ -1,6 +1,8 @@
 ﻿#include "game.h"
 #include "gui.h"
 
+#pragma region constants
+
 //std::string is readed backward into std::bitset
 
 /*
@@ -43,9 +45,11 @@ const std::string game::GERMAN_DAISY_STR = "000000000000000010100000010110101000
 */
 const std::string game::BELGAIN_DAISY_STR = "00000010100001011010100101010010100001010000000000000000000000000000000000000000000000000000000101001010000101011010100101001010";
 
-
 const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, BELGAIN_DAISY_STR };
 
+#pragma endregion
+
+#pragma region constructor_destructor
 
 game::game() : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 	progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }
@@ -66,6 +70,10 @@ game::~game()
 	}
 }
 
+#pragma endregion 
+
+#pragma region override_functions
+
 bool game::checkClick(sf::Event &)
 {
 	return false;
@@ -83,34 +91,29 @@ void game::show(sf::RenderWindow & window)
 	for (auto s : showables) {
 		s->show(window);
 	}
-	window.draw(maxMovesBox);
-	window.draw(maxMovesTitle);
-	window.draw(maxMovesEditText);
-	window.draw(moveTimeLimitBox);
-	window.draw(moveTimeLimitTitle);
-	window.draw(moveTimeLimitEditText);
-	window.draw(moveTimeLimitBox2);
-	window.draw(moveTimeLimitTitle2);
-	window.draw(moveTimeLimitEditText2);
-	window.draw(nextMoveText);
-	window.draw(timerTextBlack);
-	window.draw(timerTextWhite);
-	window.draw(p1IsBlackText);
-	window.draw(moveTimerWhite);
-	window.draw(moveTimerBlack);
 	setTimer();
 	setTurnTimer();
-	setMoveTimer();
+	
 	/*window.draw(log);*/
 }
 
 void game::type(sf::Event & e)
 {
+	for (auto t : typeables) {
+		t->type(e);
+	}
 }
 
 void game::backspace(sf::Event & e)
 {
+	for (auto t : typeables) {
+		t->backspace(e);
+	}
 }
+
+#pragma endregion
+
+#pragma region ui_initiate
 
 void game::initAllEle()
 {
@@ -125,13 +128,11 @@ void game::initAllEle()
 	initPlayerChangeBtn();
 	initMoveBtn();
 	initScore();
-	initLog();
 	initMaxMoves();
 	initMoveTimeLimit();
 	initPlayerColorBtns();
-	initBlackTimer();
-	initWhiteTimer();
-	initMoveTimer();
+	initTurnTimer();
+	initMoveCounter();
 	initNextMove();
 }
 
@@ -164,20 +165,6 @@ void game::initStartBtn()
 	clickables.push_back(startBtn);
 }
 
-void game::startGame() {
-	if (state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
-		return;
-	}
-	if (gameProgress::NOT_STARTED == progress) {
-		gameState toBeSaved = { state, storedSec, isBlackTurn };
-		history.push(toBeSaved);
-	}
-	progress = gameProgress::IN_PROGRESS;
-	clock.restart();
-	turnTimer.restart();
-	std::cout << "Game START." << std::endl << std::endl;
-}
-
 void game::initPauseBtn()
 {
 	//need turnTimer store
@@ -207,13 +194,6 @@ void game::initStopBtn()
 	{
 		[&, this](sf::Event& e)
 		{
-			if (progress != gameProgress::IN_PROGRESS)
-				return;
-			this->progress = gameProgress::PAUSED;
-			this->storedSec += this->clock.getElapsedTime().asSeconds();
-			this->storedTurnSec += turnTimer.getElapsedTime().asSeconds();
-			std::cout << "Total time elapsed: " << clock.getElapsedTime().asSeconds() << std::endl;
-			std::cout << "Game has stopped. " << std::endl << std::endl;
 			stopGame();
 		}
 	};
@@ -227,20 +207,10 @@ void game::initUndoBtn()
 {
 	//need to update for my state variables
 	undoBtn = new button{ 100, "undo", {50, 280}, sf::Color::Red };
-	auto handler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
-			if (progress != gameProgress::IN_PROGRESS || history.size() < 2)
-				return;
-			history.pop();
-			gameState lastState = history.top();
-			state = lastState.state;
-			gameBoard->setState(state);
-			setScoreFromState(state);
-			storedSec = lastState.storedSec;
-			storedTurnSec = 0;
-			isBlackTurn = lastState.isBlackTurn;
-			clock.restart();
-			turnTimer.restart();
-			std::cout << "Undo last move." << std::endl << std::endl;
+	auto handler = new std::function<void(sf::Event&)>{ 
+		[&](sf::Event& e) 
+		{
+			undoGame();
 		}
 	};
 	undoBtn->registerHandler(handler);
@@ -250,38 +220,16 @@ void game::initUndoBtn()
 
 void game::initResetBtn() {
 	resetBtn = new button{ 100, "reset", {50, 340}, sf::Color::Red };
-	auto handler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
-			if (progress == gameProgress::NOT_STARTED)
-				return;
-			// Here's the test
-			progress = gameProgress::NOT_STARTED;
-			history = {};
-			state = std::bitset<128U>{ INIT_STATES[EMPTY] };
-			gameBoard->setState(state);
-			player1IsHuman = true;
-			player2IsHuman = false;
-			gameBoard->unSelectAll();
-			selectedIndex = {};
-			storedSec = 0;
-			isBlackTurn = true;
-			isP1Black = false;
-			timerText->setText("Timer: 0:0");
-			moveTimeLimitBlack = 0;
-			moveTimeLimitWhite = 0;
-			moveTimeLimitEditText.setString("");
-			moveTimeLimitEditText2.setString("");
-			timerTextBlack.setString("P1: 0.0");
-			timerTextWhite.setString("P2: 0.0");
-			blackLostText->setText("Black Lost: 0");
-			whiteLostText->setText("White Lost: 0");
-			std::cout << "Game is reseted." << std::endl << std::endl;
+	auto handler = new std::function<void(sf::Event&)>{ 
+		[&](sf::Event& e) 
+		{
+			resetGame();
 		}
 	};
 	resetBtn->registerHandler(handler);
 	showables.push_back(resetBtn);
 	clickables.push_back(resetBtn);
 }
-
 
 void game::initboardSetupBtn() {
 	boardSetupLabel = new textbox{ 25, {850, 50}, sf::Color::Red, "Choose board initial setup: " };
@@ -291,30 +239,20 @@ void game::initboardSetupBtn() {
 	standardBtn->getBackground().setSize({ 150, 35 });
 	germanDaisyBtn->getBackground().setSize({ 150, 35 });
 	belgainDaisyBtn->getBackground().setSize({ 150, 35 });
-	auto standardHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
-			if (progress != gameProgress::NOT_STARTED)
-				return;
-			state = std::bitset<128U>{ INIT_STATES[STANDARD] };
-			gameBoard->setState(state);
-		}
+	auto handlerGen = [this](const std::string& s) {
+		return new std::function<void(sf::Event&)>{ 
+			[&](sf::Event& e) 
+			{
+				if (progress != gameProgress::NOT_STARTED)
+					return;
+				state = std::bitset<128U>{ s };
+				gameBoard->setState(state);
+			}
+		};
 	};
-	standardBtn->registerHandler(standardHandler);
-	auto germanDaisyHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
-			if (progress != gameProgress::NOT_STARTED)
-				return;
-			state = std::bitset<128U>{ INIT_STATES[GERMAN_DAISY] };
-			gameBoard->setState(state);
-		}
-	};
-	germanDaisyBtn->registerHandler(germanDaisyHandler);
-	auto belgainDaisyHandler = new std::function<void(sf::Event&)>{ [&](sf::Event& e) {
-			if (progress != gameProgress::NOT_STARTED)
-				return;
-			state = std::bitset<128U>{ INIT_STATES[BELGAIN_DAISY] };
-			gameBoard->setState(state);
-		}
-	};
-	belgainDaisyBtn->registerHandler(belgainDaisyHandler);
+	standardBtn->registerHandler(handlerGen(INIT_STATES[STANDARD]));
+	germanDaisyBtn->registerHandler(handlerGen(INIT_STATES[GERMAN_DAISY]));
+	belgainDaisyBtn->registerHandler(handlerGen(INIT_STATES[BELGAIN_DAISY]));
 	showables.push_back(boardSetupLabel);
 	showables.push_back(standardBtn);
 	showables.push_back(germanDaisyBtn);
@@ -410,24 +348,7 @@ void game::initMoveBtn() {
 				nextState(state);
 			});		*/
 			
-			if (progress != gameProgress::IN_PROGRESS)
-				return;
-			if (selectedIndex.size() == 0)
-				return;
-			bool moveType = isSideMove(i);
-			bool valid = moveType ? isSideMoveValid(i) : isInlineValid(i);
-			if (valid) {
-				auto action = makeAction(i, moveType);
-				std::cout << "player " << (isBlackTurn ? "1(Black)" : "2(White)") << "is moving by action: " << std::endl;
-				std::cout << "count: " <<action.count << " index: " << action.index << " direction: " << action.direction << std::endl;
-				gameBoard->unSelectAll();
-				selectedIndex.clear();
-				auto tempState = logic::move(state, action, isBlackTurn);
-				isBlackTurn = !isBlackTurn;
-				nextState(tempState);
-				turnTimer.restart();
-				++movesMade;
-			}
+			move(i);
 			
 		} };
 		moveBtn[i]->registerHandler(handler);
@@ -436,6 +357,315 @@ void game::initMoveBtn() {
 	}
 }
 
+void game::initMaxMoves()
+{
+	maxMovesTitle = new textbox{ 25, {1000, 380}, sf::Color::Red, "Move Limit: " };
+	maxMovesEditText = new editText{ {170, 35}, {1000, 420}, sf::Color::Black, sf::Color{165,104,24} };
+	maxMovesEditText->setNumberOnly(true);
+	showables.push_back(maxMovesTitle);
+	showables.push_back(maxMovesEditText);
+	clickables.push_back(maxMovesEditText);
+	typeables.push_back(maxMovesEditText);
+}
+
+void game::initMoveTimeLimit()
+{
+	moveTimeLimitTitle = new textbox{ 25, {1000, 460}, sf::Color::Red, "Time Limit Bl:" };
+	moveTimeLimitEditText = new editText{ {170, 35}, {1000, 500}, sf::Color::Black, sf::Color{165,104,24} };
+	moveTimeLimitEditText->setNumberOnly(true);
+	showables.push_back(moveTimeLimitTitle);
+	showables.push_back(moveTimeLimitEditText);
+	clickables.push_back(moveTimeLimitEditText);
+	typeables.push_back(moveTimeLimitEditText);
+
+	moveTimeLimitTitle2 = new textbox{ 25, {1000, 540}, sf::Color::Red, "Time Limit Wh: " };
+	moveTimeLimitEditText2 = new editText{ {170, 35}, {1000, 580}, sf::Color::Black, sf::Color{165,104,24} };
+	moveTimeLimitEditText2->setNumberOnly(true);
+	showables.push_back(moveTimeLimitTitle2);
+	showables.push_back(moveTimeLimitEditText2);
+	clickables.push_back(moveTimeLimitEditText2);
+	typeables.push_back(moveTimeLimitEditText2);
+}
+
+void game::initPlayerColorBtns()
+{
+	p1IsBlackText = new textbox{ 25, {945, 630}, sf::Color::Red, "P1 Black?" };
+	player1IsBlackBtn = new button{ 80, "Yes", {1085, 630}, sf::Color::Black };
+	player1IsBlackBtn->setFillColor(sf::Color::White);
+
+	auto handler = new std::function<void(sf::Event&)>
+	{
+		[&, this](sf::Event& e)
+		{
+			if (progress == game::NOT_STARTED)
+			{
+				isP1Black = !isP1Black;
+				(isP1Black) ? player1IsBlackBtn->setText("Yes") : player1IsBlackBtn->setText("No");
+			}
+		}
+	};
+	player1IsBlackBtn->registerHandler(handler);
+	showables.push_back(p1IsBlackText);
+	showables.push_back(player1IsBlackBtn);
+	clickables.push_back(player1IsBlackBtn);
+}
+
+void game::initNextMove()
+{
+	//Placerholder for next move once it has been implemented
+	nextMoveText = new textbox{ 25, { 100, 20}, sf::Color::Red,  "I5, I6, I7 -> G6, G7, G8" };
+}
+
+void game::initTurnTimer()
+{
+	timerTextBlack = new textbox{ 25, { 400, 715}, sf::Color::Red,  ("Black: " + std::to_string(moveTimeLimitBlack)) };
+	showables.push_back(timerTextBlack);
+	timerTextWhite = new textbox{ 25, { 400, 740}, sf::Color::Red,  ("White: " + std::to_string(moveTimeLimitWhite)) };
+	showables.push_back(timerTextWhite);
+}
+
+void game::initMoveCounter()
+{
+	moveCounterBlack = new textbox{ 25, { 625, 715}, sf::Color::Red,  ("Moves: " + std::to_string(maxMovesPerPlayer)) };
+	moveCounterWhite = new textbox{ 25, { 625, 740}, sf::Color::Red,  ("Moves: " + std::to_string(maxMovesPerPlayer)) };
+	showables.push_back(moveCounterBlack);
+	showables.push_back(moveCounterWhite);
+}
+
+#pragma endregion
+
+#pragma region game_state_setters
+
+void game::startGame() {
+	if (state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
+		return;
+	}
+	if (gameProgress::NOT_STARTED == progress) {
+		extractPropertyNDisplay(moveCounterBlack, maxMovesEditText, maxMovesPerPlayer, "Moves: ");
+		extractPropertyNDisplay(moveCounterWhite, maxMovesEditText, maxMovesPerPlayer, "Moves: ");
+		extractPropertyNDisplay(timerTextBlack, moveTimeLimitEditText, moveTimeLimitBlack, "Black: ");
+		extractPropertyNDisplay(timerTextWhite, moveTimeLimitEditText2, moveTimeLimitWhite, "White: ");
+		gameState toBeSaved = { state, storedSec, isBlackTurn };
+		history.push(toBeSaved);
+	}
+	progress = gameProgress::IN_PROGRESS;
+
+	clock.restart();
+	turnTimer.restart();
+	std::cout << "Game START." << std::endl << std::endl;
+}
+
+void game::stopGame()
+{
+	if (!(progress & (gameProgress::IN_PROGRESS | gameProgress::PAUSED)))
+		return;
+	
+	this->storedSec += this->clock.getElapsedTime().asSeconds();
+	this->storedTurnSec += turnTimer.getElapsedTime().asSeconds();
+	std::cout << "Total time elapsed: " << clock.getElapsedTime().asSeconds() << std::endl;
+	std::cout << "Game has stopped. " << std::endl << std::endl;
+	// 1. Check score
+	auto scores = getScoreFromState(state);
+
+	// 2. Sum time taken by each player
+	double blackTotalTime = 0.0;
+	double whiteTotalTime = 0.0;
+
+	auto lastTurn = history.top();
+	history.pop();
+	while (!history.empty()) {
+		gameState thisTurn = history.top();
+		if (lastTurn.isBlackTurn) {
+			blackTotalTime += (lastTurn.storedSec - thisTurn.storedSec);
+		}
+		else {
+			whiteTotalTime += (lastTurn.storedSec - thisTurn.storedSec);
+		}
+		lastTurn = thisTurn;
+		history.pop();
+	}
+
+	// 3. Compare time
+	std::cout << "Black lost: " << scores.x << " - White lost: " << scores.y << std::endl;
+	std::cout << "Black took " << blackTotalTime << " seconds to move." << std::endl;
+	std::cout << "White took " << whiteTotalTime << " seconds to move." << std::endl;
+	bool isBlackWin = scores.x == scores.y ? blackTotalTime < whiteTotalTime : scores.x < scores.y;
+	std::cout << (isBlackWin ? "Black" : "White") << " wins!" << std::endl;
+	this->progress = isBlackWin ? gameProgress::BLACK_WINNED : gameProgress::WHITE_WINNED;
+	// Set base states so game cannot be restarted without reset.
+	history = {};
+	state = std::bitset<128U>{ INIT_STATES[EMPTY] };
+}
+
+void game::undoGame() {
+	if (progress != gameProgress::IN_PROGRESS || history.size() < 2)
+		return;
+	history.pop();
+	gameState lastState = history.top();
+	state = lastState.state;
+	gameBoard->setState(state);
+	setScoreFromState(state);
+	storedSec = lastState.storedSec;
+	storedTurnSec = 0;
+	isBlackTurn = !lastState.isBlackTurn;
+	clock.restart();
+	turnTimer.restart();
+	std::cout << "Undo last move." << std::endl << std::endl;
+}
+
+void game::resetGame() {
+	if (progress == gameProgress::NOT_STARTED)
+		return;
+	// Here's the test
+	progress = gameProgress::NOT_STARTED;
+	history = {};
+	state = std::bitset<128U>{ INIT_STATES[EMPTY] };
+	gameBoard->setState(state);
+	gameBoard->unSelectAll();
+	selectedIndex = {};
+	storedSec = 0;
+	isBlackTurn = true;
+	timerText->setText("Timer: 0:0");
+	timerTextBlack->setText("Black: 0.0");
+	timerTextWhite->setText("White: 0.0");
+	blackLostText->setText("Black Lost: 0");
+	whiteLostText->setText("White Lost: 0");
+	maxMovesEditText->setisEnbled(true);
+	moveTimeLimitEditText->setisEnbled(true);
+	moveTimeLimitEditText2->setisEnbled(true);
+	std::cout << "Game is reseted." << std::endl << std::endl;
+}
+
+void game::move(unsigned short direction) {
+	if (progress != gameProgress::IN_PROGRESS)
+		return;
+	if (selectedIndex.size() == 0)
+		return;
+	bool moveType = isSideMove(direction);
+	bool valid = moveType ? isSideMoveValid(direction) : isInlineValid(direction);
+	if (valid) {
+		auto action = makeAction(direction, moveType);
+		std::cout << "player " << (isBlackTurn ? "1(Black)" : "2(White)") << "is moving by action: " << std::endl;
+		std::cout << "count: " << action.count << " index: " << action.index << " direction: " << action.direction << std::endl;
+		gameBoard->unSelectAll();
+		selectedIndex.clear();
+		auto tempState = logic::move(state, action, isBlackTurn);
+		++movesMade;
+		setMoveCount();
+		isBlackTurn = !isBlackTurn;
+		nextState(tempState);
+		turnTimer.restart();
+	}
+}
+
+void game::nextState(std::bitset<128U> state) {
+	this->state = state;
+	gameBoard->setState(state);
+	setScoreFromState(state);
+	gameState toBeSaved = { state, storedSec + clock.getElapsedTime().asSeconds(), !isBlackTurn };
+	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << " seconds." << std::endl << std::endl;
+	history.push(toBeSaved);
+	if (isBlackTurn) {
+		timerTextWhite->setText("White: 0.00");
+	}
+	else {
+		timerTextBlack->setText("Black: 0:00");
+	}
+}
+
+#pragma endregion
+
+#pragma region helpers
+
+void game::setScoreFromState(std::bitset<128U>& state) {
+	auto scores = getScoreFromState(state);
+	blackLostText->setText("Black Lost: " + std::to_string(scores.x));
+	whiteLostText->setText("White Lost: " + std::to_string(scores.y));
+}
+
+sf::Vector2u game::getScoreFromState(std::bitset<128U>& state) {
+	auto whiteLost = 0u, blackLost = 0u;
+	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
+		whiteLost <<= 1;
+		blackLost <<= 1;
+		whiteLost |= state[j] << 0;
+		blackLost |= state[i] << 0;
+	}
+	return { blackLost, whiteLost };
+}
+
+void game::extractPropertyNDisplay(textbox * text, editText * editText, int& property, std::string label)
+{
+	auto value = editText->getText();
+	if (value == "") value = "0.00";
+	auto content = (label + value);
+	property = std::stoi(value);
+	text->setText(content);
+	editText->setisEnbled(false);
+}
+
+#pragma endregion
+
+#pragma region getters_setters
+
+bool game::getIsBlackTurn() {
+	return isBlackTurn;
+}
+
+game::gameProgress game::getProgress()
+{
+	return progress;
+}
+
+#pragma endregion
+
+#pragma region ui_updater
+
+void game::setTimer() {
+	if (progress == gameProgress::IN_PROGRESS) {
+		//TODO also do my other timers
+		auto time = clock.getElapsedTime();
+		auto second = time.asSeconds();
+		float tempSec = storedSec + second;
+		int min = static_cast<int>(tempSec) / 60;
+		int sec = static_cast<int>(tempSec) % 60;
+		timerText->setText("Timer: " + std::to_string(min) + ":" + std::to_string(sec));
+	}
+}
+
+void game::setTurnTimer() {
+	if (progress == gameProgress::IN_PROGRESS) {
+		//TODO timer restart is in button handlers of directionals, if we make an auto execute move we should move it there
+		auto time = turnTimer.getElapsedTime();
+		auto second = storedTurnSec + time.asSeconds();
+		//TODO if timer is 0, end game?
+		if (isBlackTurn) {
+			auto timeleft = moveTimeLimitBlack - second;
+			timerTextBlack->setText("Black: " + (timeleft > 0 ? std::to_string(timeleft) : "0.00"));
+		} else {
+			auto timeleft = moveTimeLimitWhite - second;
+			timerTextWhite->setText("White: " + (timeleft > 0 ? std::to_string(timeleft) : "0.00"));
+		}
+	}
+}
+
+void game::setMoveCount() {
+	if (progress == gameProgress::IN_PROGRESS) {
+		//Alternates counting of moves
+		auto moveLeft = static_cast<int>(maxMovesPerPlayer - ceil(movesMade / 2.0));
+		if (isBlackTurn) {
+			moveCounterBlack->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
+		}
+		else {
+			moveCounterWhite->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
+		}
+	}
+}
+
+#pragma endregion
+
+#pragma region uiMoveLogic
+
 logic::action game::makeAction(unsigned short direction, bool isSideMove) {
 	if (isSideMove) {
 		int drrCcw1 = (direction + 5) % 6;
@@ -443,7 +673,7 @@ logic::action game::makeAction(unsigned short direction, bool isSideMove) {
 		int iCcw1 = isHighCcw1 ? *(selectedIndex.end() - 1) : *selectedIndex.begin();
 		int iCcw1Next = logic::MOVE_TABLE[iCcw1][drrCcw1];
 		for (int is : selectedIndex) {
-			if(iCcw1Next == is)
+			if (iCcw1Next == is)
 				return { static_cast<int>(selectedIndex.size()), iCcw1, direction };
 		}
 		int drrCcw2 = (direction + 4) % 6;
@@ -506,90 +736,6 @@ bool game::isSideMoveValid(unsigned short direction) {
 	return true;
 }
 
-
-void game::initLog()
-{
-}
-
-void game::setTimer() {
-	if (progress == gameProgress::IN_PROGRESS) {
-		//TODO also do my other timers
-		auto time = clock.getElapsedTime();
-		auto second = time.asSeconds();
-		float tempSec = storedSec + second;
-		int min = static_cast<int>(tempSec) / 60;
-		int sec = static_cast<int>(tempSec) % 60;
-		timerText->setText("Timer: " + std::to_string(min) + ":" + std::to_string(sec));
-	}
-}
-
-void game::nextState(std::bitset<128U> state) {
-	this->state = state;
-	gameBoard->setState(state);
-	setScoreFromState(state);
-	gameState toBeSaved = { state, storedSec + clock.getElapsedTime().asSeconds(), isBlackTurn };
-	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << " seconds." << std::endl << std::endl;
-	history.push(toBeSaved);
-}
-
-void game::setScoreFromState(std::bitset<128U> state) {
-	auto whiteLost = 0u, blackLost = 0u;
-	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
-		whiteLost <<= 1;
-		blackLost <<= 1;
-		whiteLost |= state[j] << 0;
-		blackLost |= state[i] << 0;
-	}
-	blackLostText->setText("Black Lost: " + std::to_string(blackLost));
-	whiteLostText->setText("White Lost: " + std::to_string(whiteLost));
-	/*for (auto i = isBlackTurn << 0, j = !isBlackTurn << 0; i < 122; i += 2, j += 2) {
-		if (state[i]) ++black;
-		if (state[j]) ++white;
-	}
-	blackLostText.setString("Black Lost: " + std::to_string((14 - white)));
-	whiteLostText.setString("White Lost: " + std::to_string((14 - black)));
-	*/
-}
-
-void game::stopGame()
-{
-	// 1. Check score
-	int whiteScore;
-	int blackScore;
-
-	// 2. Sum time taken by each player
-	double blackTotalTime = 0.0;
-	double whiteTotalTime = 0.0;
-
-	for (int i = 0u; i < history.size(); i++) {
-		gameState thisTurn = history.top();
-		if (thisTurn.isBlackTurn) {
-			blackTotalTime += thisTurn.storedSec;
-		} else {
-			whiteTotalTime += thisTurn.storedSec;
-		}
-		history.pop();
-	}
-
-	// 3. Compare time
-	std::cout << "Black took " << blackTotalTime << " seconds to move." << std::endl;
-	std::cout << "White took " << whiteTotalTime << " seconds to move." << std::endl;
-	std::cout << (blackTotalTime < whiteTotalTime ? "Black" : "White") << " wins!" << std::endl;
-
-	// Set base states so game cannot be restarted without reset.
-	history = {};
-	state = std::bitset<128U>{ INIT_STATES[EMPTY] };
-}
-
-bool game::getIsBlackTurn() {
-	return isBlackTurn;
-}
-
-game::gameProgress game::getProgress()
-{
-	return progress;
-}
-
 bool game::trySelect(int index) {
 	bool selected = false;
 
@@ -614,7 +760,7 @@ bool game::trySelect(int index) {
 		for (int i = 0; i < 6; ++i) {
 			if ((logic::MOVE_TABLE[index][i] == selectedIndex[0] && logic::MOVE_TABLE[selectedIndex[0]][i] == selectedIndex[1])
 				|| (logic::MOVE_TABLE[index][i] == selectedIndex[1] && logic::MOVE_TABLE[selectedIndex[1]][i] == selectedIndex[0])) {
-				
+
 				selectedIndex.push_back(index);
 				selected = true;
 				break;
@@ -640,184 +786,4 @@ bool game::tryUnSelect(int index) {
 	return false;
 }
 
-
-void game::setUpText(sf::Text& textElement, std::string text, int x, int y)
-{
-	//Standardizes non editable text elements
-	sf::Font &arial = rman->getFont("arial");
-	textElement.setFont(arial);	
-	textElement.setPosition(x,y);
-	textElement.setString(text);
-	textElement.setFillColor(sf::Color(250, 0, 0));
-	textElement.setCharacterSize(25);
-}
-
-void game::setUpTextBox(sf::Text& textElement, sf::RectangleShape& boxElement, sf::Text& titleElement, int x, int y, std::string title)
-{
-	//Standardizes all textbox elements
-	sf::Font &arial = rman->getFont("arial");
-	titleElement.setPosition(x, y);
-	titleElement.setString(title);
-	titleElement.setFillColor(sf::Color(255,0,0));
-	titleElement.setFont(arial);
-
-	boxElement.setSize(sf::Vector2f(170,35));
-	boxElement.setFillColor(sf::Color(165,104,24));
-	boxElement.setPosition(x, y + 40);
-
-	textElement.setPosition(x, y + 40);
-	textElement.setFont(arial);
-}
-
-void game::setUpTimer(sf::Text& timer, int x, int y, int timeLimit, std::string text)
-{
-	//Standardizes all timer elements
-	sf::Font &arial = rman->getFont("arial");
-	timer.setFont(arial);
-	timer.setString(text + std::to_string(timeLimit));
-	timer.setFillColor(sf::Color::Red);
-	timer.setCharacterSize(25);
-	timer.setPosition(x, y);
-}
-
-void game::initMaxMoves()
-{
-	setUpTextBox(maxMovesEditText, maxMovesBox, maxMovesTitle, 1000, 380, "Move Limit: ");
-}
-
-void game::setMaxMovesEditText(sf::String maxMoves)
-{
-	if (progress == game::NOT_STARTED)
-	{
-		std::string temp = maxMovesEditText.getString();
-		temp.append(maxMoves.toAnsiString());
-		maxMovesEditText.setString(temp);
-
-		try
-		{
-			maxMovesPerPlayer = std::stoi(temp);
-			moveTimerWhite.setString("Moves: " + ((maxMovesPerPlayer - (movesMade / 2) > 0) ? std::to_string(maxMovesPerPlayer - (movesMade / 2)) : "0"));
-			moveTimerBlack.setString("Moves: " + ((maxMovesPerPlayer - (movesMade / 2) > 0) ? std::to_string(maxMovesPerPlayer - (movesMade / 2)) : "0"));
-		}
-		catch (const std::exception& e)
-		{
-			maxMovesEditText.setString("");
-		}
-	}
-}
-
-
-
-void game::setMoveTimeLimitEditText(sf::String moveTimeLimit)
-{
-	if (progress == game::NOT_STARTED)
-	{
-		std::string temp = moveTimeLimitEditText.getString();
-		temp.append(moveTimeLimit.toAnsiString());
-		moveTimeLimitEditText.setString(temp);
-
-		try
-		{
-			moveTimeLimitBlack = std::stoi(temp);
-			timerTextBlack.setString("Black: " + std::to_string(moveTimeLimitBlack));
-		}
-		catch (const std::exception& e)
-		{
-			moveTimeLimitEditText.setString("");
-		}
-	}
-}
-void game::setMoveTimeLimitEditText2(sf::String moveTimeLimit)
-{
-	if (progress == game::NOT_STARTED)
-	{
-		std::string temp = moveTimeLimitEditText2.getString();
-		temp.append(moveTimeLimit.toAnsiString());
-		moveTimeLimitEditText2.setString(temp);
-
-		try
-		{
-			moveTimeLimitWhite = std::stoi(temp);
-			timerTextWhite.setString("White: " + std::to_string(moveTimeLimitWhite));
-		}
-		catch (const std::exception& e)
-		{
-			moveTimeLimitEditText2.setString("");
-		}
-	}
-}
-
-void game::initMoveTimeLimit()
-{
-	//Initializes textbox move timer limits for both players
-	setUpTextBox(moveTimeLimitEditText, moveTimeLimitBox, moveTimeLimitTitle, 1000, 460, "Time Limit Bl:");
-	setUpTextBox(moveTimeLimitEditText2, moveTimeLimitBox2, moveTimeLimitTitle2, 1000, 540, "Time Limit Wh: ");
-}
-
-void game::initPlayerColorBtns()
-{
-	setUpText(p1IsBlackText, "P1 Black?", 945, 630);
-	player1IsBlackBtn = new button{80, "Yes", {1085, 630}, sf::Color::Black };
-	player1IsBlackBtn->setFillColor(sf::Color::White);
-
-	auto handler = new std::function<void(sf::Event&)>
-	{
-		[&, this](sf::Event& e)
-		{
-			if (progress == game::NOT_STARTED)
-			{
-				isP1Black = !isP1Black;
-				(isP1Black) ? player1IsBlackBtn->setText("Yes") : player1IsBlackBtn->setText("No");
-			}
-		}
-	};
-	player1IsBlackBtn->registerHandler(handler);
-	showables.push_back(player1IsBlackBtn);
-	clickables.push_back(player1IsBlackBtn);
-}
-
-void game::initNextMove()
-{
-	//Placerholder for next move once it has been implemented
-	setUpText(nextMoveText, "I5, I6, I7 -> G6, G7, G8", 100, 20);
-}
-
-void game::initBlackTimer()
-{
-	setUpTimer(timerTextBlack, 400, 715, moveTimeLimitBlack, "Black: ");
-}
-
-void game::initWhiteTimer()
-{
-	setUpTimer(timerTextWhite, 400, 740, moveTimeLimitWhite, "White: ");
-}
-
-void game::initMoveTimer()
-{
-	setUpTimer(moveTimerBlack, 625, 715, maxMovesPerPlayer, "Moves: ");
-	setUpTimer(moveTimerWhite, 625, 740, maxMovesPerPlayer, "Moves: ");
-}
-
-void game::setTurnTimer() {
-	if (progress == gameProgress::IN_PROGRESS) {
-		//TODO timer restart is in button handlers of directionals, if we make an auto execute move we should move it there
-		auto time = turnTimer.getElapsedTime();
-		auto second = storedTurnSec + time.asSeconds();
-		//TODO if timer is 0, end game?
-		if(isBlackTurn)
-			timerTextBlack.setString("Black: " + ((moveTimeLimitBlack - second) > 0 ? std::to_string(moveTimeLimitBlack - second) : "0.00"));
-		if(!isBlackTurn)
-			timerTextWhite.setString("White: " + ((moveTimeLimitWhite - second) > 0 ? std::to_string(moveTimeLimitWhite - second) : "0.00"));	
-	}
-}
-
-void game::setMoveTimer() {
-	if (progress == gameProgress::IN_PROGRESS) {
-		//Alternates counting of moves
-		if(isBlackTurn)
-			moveTimerWhite.setString("Moves: " + ((maxMovesPerPlayer - ceil(movesMade/2.0) > 0) ? std::to_string(maxMovesPerPlayer - (int) ceil(movesMade/2.0)) : "0"));
-		else
-			moveTimerBlack.setString("Moves: " + ((maxMovesPerPlayer - ceil(movesMade/2.0) > 0) ? std::to_string(maxMovesPerPlayer - (int) ceil(movesMade/2.0)) : "0"));
-	}
-}
-
+#pragma endregion

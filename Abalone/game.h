@@ -15,16 +15,7 @@
 class gui;
 class game : public IShowable, public virtual IClickable, public ITypeable
 {
-	typedef struct {
-		std::bitset<128U> state;
-		float storedSec;
-		bool isBlackTurn;
-		//need timesec?p1isblack?maxmoves?
-	} gameState;
-
 public:
-	
-
 	static const std::string STANDARD_STR;
 	static const std::string GERMAN_DAISY_STR;
 	static const std::string BELGAIN_DAISY_STR;
@@ -43,12 +34,13 @@ public:
 		IN_PROGRESS = 1,
 		PAUSED = 1 << 1,
 		AI_SEARCHING =  1 << 2,
-		PLAYER1_WINNED = 1 << 3,
-		PLAYER2_WINNED = 1 << 4
+		BLACK_WINNED = 1 << 3,
+		WHITE_WINNED = 1 << 4
 	} gameProgress;
 
 	game();
 	game(gui* gui);
+	~game();
 
 	void registerHandler(handler h) = delete;
 	void removeHandler(handler h) = delete;
@@ -60,20 +52,17 @@ public:
 	
 	bool getIsBlackTurn();
 	gameProgress getProgress();
-
 	bool trySelect(int index);
-
 	bool tryUnSelect(int index);
 
-	void setMaxMovesEditText(sf::String maxMoves);
-	void setMoveTimeLimitEditText(sf::String moveTimeLimit);
-	void stopGame();
-	void setMoveTimeLimitEditText2(sf::String moveTimeLimit);
-	void setTurnTimer();
-
-	~game();
-
 private:
+	typedef struct {
+		std::bitset<128U> state;
+		float storedSec;
+		bool isBlackTurn;
+		//need timesec?p1isblack?maxmoves?
+	} gameState;
+
 	bool player1IsHuman;
 	bool player2IsHuman;
 	bool isP1Black;
@@ -92,13 +81,15 @@ private:
 	std::stack<gameState> history;
 	std::vector<int> selectedIndex;
 
+	gui* ui;
+	resourceManager* rman;
+	sf::Clock clock;
+	sf::Clock turnTimer;
 
 	std::vector<IShowable*> showables;
 	std::vector<IClickable*> clickables;
 	std::vector<ITypeable*> typeables;
 
-	gui* ui;
-	resourceManager* rman;
 	board* gameBoard;
 	button* startBtn;
 	button* stopBtn;
@@ -117,33 +108,18 @@ private:
 	textbox* timerText;
 	textbox* blackLostText;
 	textbox* whiteLostText;
-	sf::Clock clock;
-	
-
-	sf::Text maxMovesTitle;
-	sf::RectangleShape maxMovesBox;
-	sf::Text maxMovesEditText;
-	sf::Text moveTimeLimitTitle;
-	sf::Text moveTimeLimitTitle2;
-	sf::RectangleShape moveTimeLimitBox;
-	sf::RectangleShape moveTimeLimitBox2;
-	sf::Text moveTimeLimitEditText;
-	sf::Text moveTimeLimitEditText2;
-	sf::Text p1IsBlackText;
-	sf::Text nextMoveText;
-	sf::Clock turnTimer;
-	sf::Text timerTextBlack;
-	sf::Text timerTextWhite;
-	sf::Text moveTimerBlack;
-	sf::Text moveTimerWhite;
-
-	void initMaxMoves();
-	void initMoveTimeLimit();
-	void initPlayerColorBtns();
-	void initNextMove();
-	void initBlackTimer();
-	void initWhiteTimer();
-	void initMoveTimer();
+	textbox* p1IsBlackText;
+	textbox* nextMoveText;
+	textbox* timerTextBlack;
+	textbox* timerTextWhite;
+	textbox* moveCounterBlack;
+	textbox* moveCounterWhite;
+	textbox* maxMovesTitle;
+	textbox* moveTimeLimitTitle;
+	textbox* moveTimeLimitTitle2;
+	editText* maxMovesEditText;
+	editText* moveTimeLimitEditText;
+	editText* moveTimeLimitEditText2;
 
 	void initAllEle();
 	void initboardSetupBtn();
@@ -152,29 +128,39 @@ private:
 	void initTimer();
 	void initStartBtn();
 	void initStopBtn();
-	void startGame();
 	void initPauseBtn();
 	void initUndoBtn();
 	void initResetBtn();
 	void initScore();
 	void initMoveBtn();
+	void initMaxMoves();
+	void initMoveTimeLimit();
+	void initPlayerColorBtns();
+	void initNextMove();
+	void initTurnTimer();
+	void initMoveCounter();
+
+	void startGame();
+	void undoGame();
+	void resetGame();
+	void stopGame();
+	void move(unsigned short direction);
+	void nextState(std::bitset<128U> state);
+
 	logic::action makeAction(unsigned short direction, bool isSideMove);
 	bool isSideMove(unsigned short direction);
 	bool isActionValid(unsigned short, bool);
 	bool isInlineValid(unsigned short direction);
 	bool isSideMoveValid(unsigned short direction);
-	void initLog();
+
 	void setTimer();
-	void setMoveTimer();
-	void setUpText(sf::Text& textElement, std::string text, int x, int y);
-	void setUpTimer(sf::Text& timer, int x, int y, int timeLimit, std::string text);
-	void setUpTextBox(sf::Text& textElement, sf::RectangleShape& boxElement, sf::Text& titleElement, int x, int y, std::string title);
+	void setMoveCount();
+	void setTurnTimer();
 
-	//gameProgress getProgress();
+	void extractPropertyNDisplay(textbox * text, editText * editText, int& property, std::string label);
+	void setScoreFromState(std::bitset<128U>& state);
+	sf::Vector2u getScoreFromState(std::bitset<128U>& state);
 
-	void nextState(std::bitset<128U> state);
-
-	void setScoreFromState(std::bitset<128U> state);
 
 };
 

@@ -1,15 +1,19 @@
 #include "editText.h"
 
-editText::editText(sf::Vector2f size, sf::Vector2f location)
-	:bg{ size }, text{ }, focused{false}
+editText::editText(sf::Vector2f size, sf::Vector2f location, sf::Color fontColor, sf::Color bgColor)
+	:bg{ size }, text{ }, bgColor{ bgColor }, focused{ false }, enbled{ true }, numberOnly{ false }
 {
 	bg.setPosition(location);
 	bg.setFillColor(sf::Color{ 181, 182, 183 });
 	text.setFont(resourceManager::instance.getFont("arial"));
 	text.setPosition(location);
-	text.setFillColor(sf::Color::Black);
+	text.setFillColor(fontColor);
 	text.setCharacterSize(static_cast<unsigned int>(size.y * 0.8));
 }
+
+editText::editText(sf::Vector2f size, sf::Vector2f location)
+	:editText{ size , location, sf::Color::Black, sf::Color::White }
+{}
 
 void editText::show(sf::RenderWindow & window)
 {
@@ -19,7 +23,7 @@ void editText::show(sf::RenderWindow & window)
 
 void editText::type(sf::Event & e)
 {
-	if (focused) {
+	if (focused && (!numberOnly || (e.text.unicode > 47 && e.text.unicode < 58))) {
 		std::string content = text.getString();
 		content += static_cast<char>(e.text.unicode);
 		text.setString(content);
@@ -41,8 +45,10 @@ bool editText::checkClick(sf::Event & e)
 
 void editText::click(sf::Event & e)
 {
-	focused = checkClick(e);
-	bg.setFillColor(focused ? sf::Color::White : sf::Color{ 181, 182, 183 });
+	if (enbled) {
+		focused = checkClick(e);
+		bg.setFillColor(focused ? bgColor : sf::Color{ 181, 182, 183 });
+	}
 }
 
 sf::RectangleShape & editText::getBackground()
@@ -55,12 +61,41 @@ void editText::setBackground(sf::RectangleShape bg)
 	bg = std::move(bg);
 }
 
-sf::Text & editText::getText()
+std::string editText::getText()
 {
-	return text;
+	return text.getString();
 }
 
 void editText::setText(std::string s)
 {
 	text.setString(s);
+}
+
+sf::Text & editText::getSfText()
+{
+	return text;
+}
+
+bool editText::isNumberOnly()
+{
+	return numberOnly;
+}
+
+void editText::setNumberOnly(bool b)
+{
+	numberOnly = b;
+}
+
+bool editText::isEnbled()
+{
+	return enbled;
+}
+
+void editText::setisEnbled(bool b)
+{
+	enbled = b;
+	if (!enbled) {
+		focused = false;
+		bg.setFillColor(sf::Color{ 181, 182, 183 });
+	}
 }

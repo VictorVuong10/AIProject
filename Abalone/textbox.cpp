@@ -14,12 +14,17 @@ void textbox::show(sf::RenderWindow & window)
 	window.draw(text);
 }
 
-sf::Text & textbox::getText()
+std::string textbox::getText()
 {
-	return text;
+	return text.getString();
 }
 
 void textbox::setText(std::string s)
 {
 	text.setString(s);
+}
+
+sf::Text & textbox::getSfText()
+{
+	return text;
 }

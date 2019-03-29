@@ -8,7 +8,7 @@ gui::gui() : callback{}, window{ sf::VideoMode(1200, 800), "ABALONE!" }
 	cur = this;
 }
 
-gui::gui(game & game) : callback{}, window{ sf::VideoMode(1200, 800), "ABALONE" }
+gui::gui(game & game) : callback{}, window{ sf::VideoMode(1200, 800), "ABALONE!" }
 {
 	window.setFramerateLimit(30);
 }
@@ -21,10 +21,6 @@ gui::~gui()
 
 void gui::start()
 {
-	bool inMaxMoves = false;
-	bool inMoveTimeLimit = false;
-	bool inMoveTimeLimit2 = false;
-
 	using namespace std;
 	if (!loadAllResource()) {
 		return;
@@ -42,31 +38,6 @@ void gui::start()
 			if (event.type == sf::Event::MouseButtonPressed) {
 				_game->click(event);
 			}
-			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-			{
-				if (event.mouseButton.x > 1000 && event.mouseButton.x < 1170)
-				{
-					if (event.mouseButton.y < 455 && event.mouseButton.y > 420)
-					{
-						inMaxMoves = true;
-						inMoveTimeLimit = false;
-						inMoveTimeLimit2 = false;
-					}
-					if (event.mouseButton.y < 535 && event.mouseButton.y > 500)
-					{
-						inMaxMoves = false;
-						inMoveTimeLimit = true;
-						inMoveTimeLimit2 = false;
-					}
-					if (event.mouseButton.y < 610 && event.mouseButton.y > 580)
-					{
-						inMaxMoves = false;
-						inMoveTimeLimit = false;
-						inMoveTimeLimit2 = true;
-					}
-				}
-			}
-			// && _game.progress == game::NOT_STARTED
 			if (event.type == sf::Event::TextEntered)
 			{
 				if (event.text.unicode == '\b') {
@@ -75,12 +46,6 @@ void gui::start()
 				else if (event.text.unicode < 128)
 				{
 					_game->type(event);
-					if(inMaxMoves)
-						_game->setMaxMovesEditText(event.text.unicode);
-					if(inMoveTimeLimit)
-						_game->setMoveTimeLimitEditText(event.text.unicode);
-					if(inMoveTimeLimit2)
-						_game->setMoveTimeLimitEditText2(event.text.unicode);
 				}
 			}
 		}

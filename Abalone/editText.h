@@ -8,6 +8,7 @@ class editText : public IShowable, public virtual IClickable, public ITypeable
 {
 public:
 	editText() = default;
+	editText(sf::Vector2f size, sf::Vector2f location, sf::Color fontColor = sf::Color::Black, sf::Color bgColor = sf::Color::White);
 	editText(sf::Vector2f size, sf::Vector2f location);
 	~editText() = default;
 
@@ -24,12 +25,23 @@ public:
 	sf::RectangleShape& getBackground();
 	void setBackground(sf::RectangleShape bg);
 
-	sf::Text& getText();
+	std::string getText();
 	void setText(std::string);
+
+	sf::Text& getSfText();
+
+	bool isNumberOnly();
+	void setNumberOnly(bool b);
+
+	bool isEnbled();
+	void setisEnbled(bool b);
 
 private:
 	sf::RectangleShape bg;
 	sf::Text text;
+	sf::Color bgColor;
 	bool focused;
+	bool enbled;
+	bool numberOnly;
 };
 
