@@ -566,10 +566,10 @@ void game::nextState(std::bitset<128U> state) {
 	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << " seconds." << std::endl << std::endl;
 	history.push(toBeSaved);
 	if (isBlackTurn) {
-		timerTextWhite->setText("White: 0.00");
+		timerTextWhite->setText("White: 0");
 	}
 	else {
-		timerTextBlack->setText("Black: 0:00");
+		timerTextBlack->setText("Black: 0");
 	}
 }
 
@@ -597,7 +597,9 @@ sf::Vector2u game::getScoreFromState(std::bitset<128U>& state) {
 void game::extractPropertyNDisplay(textbox * text, editText * editText, int& property, std::string label)
 {
 	auto value = editText->getText();
-	if (value == "") value = "0.00";
+	if (value == "" || value.length() > 8) {
+		value = "0";
+	}
 	auto content = (label + value);
 	property = std::stoi(value);
 	text->setText(content);
@@ -641,10 +643,10 @@ void game::setTurnTimer() {
 		//TODO if timer is 0, end game?
 		if (isBlackTurn) {
 			auto timeleft = moveTimeLimitBlack - second;
-			timerTextBlack->setText("Black: " + (timeleft > 0 ? std::to_string(timeleft) : "0.00"));
+			timerTextBlack->setText("Black: " + (timeleft > 0 ? std::to_string(timeleft) : "0"));
 		} else {
 			auto timeleft = moveTimeLimitWhite - second;
-			timerTextWhite->setText("White: " + (timeleft > 0 ? std::to_string(timeleft) : "0.00"));
+			timerTextWhite->setText("White: " + (timeleft > 0 ? std::to_string(timeleft) : "0"));
 		}
 	}
 }
