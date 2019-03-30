@@ -68,6 +68,8 @@ game::~game()
 	for (auto s : showables) {
 		delete s;
 	}
+	delete player1;
+	delete player2;
 }
 
 #pragma endregion 
@@ -173,7 +175,7 @@ void game::initPauseBtn()
 	{ 
 		[&, this](sf::Event& e) 
 		{
-			if (progress != gameProgress::IN_PROGRESS)
+			if (!(progress & gameProgress::IN_PROGRESS))
 				return;
 			this->progress = gameProgress::PAUSED;
 			this->storedSec += this->clock.getElapsedTime().asSeconds();
@@ -420,7 +422,8 @@ void game::initMoveCounter()
 #pragma region game_state_setters
 
 void game::startGame() {
-	if (state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
+	if (!(progress & (gameProgress::NOT_STARTED | gameProgress::PAUSED)) 
+		|| state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
 		return;
 	}
 	if (gameProgress::NOT_STARTED == progress) {
@@ -436,11 +439,11 @@ void game::startGame() {
 		}
 		gameState toBeSaved = { state, storedSec, isBlackTurn };
 		history.push(toBeSaved);
-		if (!player1IsHuman || !player2IsHuman) {
-			automataMove();
-		}
 	}
 	progress = gameProgress::IN_PROGRESS;
+	if (!player1IsHuman || !player2IsHuman) {
+		automataMove();
+	}
 
 	clock.restart();
 	turnTimer.restart();
@@ -449,7 +452,7 @@ void game::startGame() {
 
 void game::stopGame()
 {
-	if (!(progress & (gameProgress::IN_PROGRESS | gameProgress::PAUSED)))
+	if (!(progress & (gameProgress::IN_PROGRESS | gameProgress::PAUSED | gameProgress::AI_SEARCHING)))
 		return;
 	
 	this->storedSec += this->clock.getElapsedTime().asSeconds();
@@ -502,6 +505,7 @@ void game::undoGame() {
 	isBlackTurn = !lastState.isBlackTurn;
 	clock.restart();
 	turnTimer.restart();
+	progress = gameProgress::PAUSED;
 	std::cout << "Undo last move." << std::endl << std::endl;
 }
 
@@ -552,17 +556,23 @@ void game::move(unsigned short direction) {
 
 void game::automataMove() {
 
+	if (gameProgress::IN_PROGRESS != progress)
+		return;
+
 	//player 2 move
 	if (isBlackTurn ^ player1IsBlack) {
 		if (!player2IsHuman) {
 			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
 
+				progress = (gameProgress::AI_SEARCHING | gameProgress::IN_PROGRESS);
 				auto actionState = player2->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
 					player1IsBlack ? moveTimeLimitWhite : moveTimeLimitBlack);
 
 				return actionState;
 			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
-
+				if (!(gameProgress::AI_SEARCHING & progress))
+					return;
+				progress = gameProgress::IN_PROGRESS;
 				nextState(actionState.second);
 				automataMove();
 			});
@@ -573,12 +583,15 @@ void game::automataMove() {
 		if (!player1IsHuman) {
 			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
 
+				progress = (gameProgress::AI_SEARCHING | gameProgress::IN_PROGRESS);
 				auto actionState = player1->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
 					player1IsBlack ? moveTimeLimitBlack : moveTimeLimitWhite);
 
 				return actionState;
 			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
-
+				if (!(gameProgress::AI_SEARCHING & progress))
+					return;
+				progress = gameProgress::IN_PROGRESS;
 				nextState(actionState.second);
 				automataMove();
 			});
@@ -635,7 +648,7 @@ bool game::getIsBlackTurn() {
 	return isBlackTurn;
 }
 
-game::gameProgress game::getProgress()
+int game::getProgress()
 {
 	return progress;
 }
@@ -645,7 +658,7 @@ game::gameProgress game::getProgress()
 #pragma region ui_updater
 
 void game::setTimer() {
-	if (progress == gameProgress::IN_PROGRESS) {
+	if (progress & gameProgress::IN_PROGRESS) {
 		//TODO also do my other timers
 		auto time = clock.getElapsedTime();
 		auto second = time.asSeconds();
@@ -657,7 +670,7 @@ void game::setTimer() {
 }
 
 void game::setTurnTimer() {
-	if (progress == gameProgress::IN_PROGRESS) {
+	if (progress & gameProgress::IN_PROGRESS) {
 		//TODO timer restart is in button handlers of directionals, if we make an auto execute move we should move it there
 		auto time = turnTimer.getElapsedTime();
 		auto second = storedTurnSec + time.asSeconds();
@@ -673,7 +686,7 @@ void game::setTurnTimer() {
 }
 
 void game::setMoveCount() {
-	if (progress == gameProgress::IN_PROGRESS) {
+	if (progress & gameProgress::IN_PROGRESS) {
 		//Alternates counting of moves
 		auto moveLeft = static_cast<int>(maxMovesPerPlayer - ceil(movesMade / 2.0));
 		if (isBlackTurn) {
@@ -760,6 +773,15 @@ bool game::isSideMoveValid(unsigned short direction) {
 }
 
 bool game::trySelect(int index) {
+	if (isBlackTurn ^ player1IsBlack) {
+		if (!player2IsHuman)
+			return false;
+	}
+	else {
+		if (!player1IsHuman)
+			return false;
+	}
+
 	bool selected = false;
 
 	switch (selectedIndex.size()) {

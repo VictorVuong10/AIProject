@@ -52,7 +52,7 @@ public:
 	void backspace(sf::Event&) override;
 	
 	bool getIsBlackTurn();
-	gameProgress getProgress();
+	int getProgress();
 	bool trySelect(int index);
 	bool tryUnSelect(int index);
 
@@ -78,7 +78,7 @@ private:
 
 	bool isBlackTurn;
 	std::bitset<128U> state;
-	gameProgress progress;
+	int progress;
 	//this is not the real game time. Use storeSec plus clock time.
 	float storedSec;
 	float storedTurnSec;
