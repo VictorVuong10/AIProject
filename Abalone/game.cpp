@@ -52,13 +52,13 @@ const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, B
 #pragma region constructor_destructor
 
 game::game() : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
-	progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }
+progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }, player1IsBlack{true}
 {
 	initAllEle();
 }
 
 game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
-	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}
+	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}, player1IsBlack{ true }
 {
 	initAllEle();
 }
@@ -436,7 +436,7 @@ void game::startGame() {
 		}
 		gameState toBeSaved = { state, storedSec, isBlackTurn };
 		history.push(toBeSaved);
-		if (player1IsHuman || player2IsHuman) {
+		if (!player1IsHuman || !player2IsHuman) {
 			automataMove();
 		}
 	}
@@ -544,7 +544,7 @@ void game::move(unsigned short direction) {
 		auto tempState = logic::move(state, action, isBlackTurn);
 		
 		nextState(tempState);
-		if (player1IsHuman || player2IsHuman) {
+		if (!player1IsHuman || !player2IsHuman) {
 			automataMove();
 		}
 	}
@@ -552,23 +552,8 @@ void game::move(unsigned short direction) {
 
 void game::automataMove() {
 
-	//player 1 move
-	if (isBlackTurn ^ player1IsBlack) {
-		if (!player1IsHuman) {
-			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
-
-				auto actionState = player1->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
-					player1IsBlack ? moveTimeLimitBlack : moveTimeLimitWhite);
-
-				return actionState;
-			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
-
-				nextState(actionState.second);
-			});
-		}
-	}
 	//player 2 move
-	else {
+	if (isBlackTurn ^ player1IsBlack) {
 		if (!player2IsHuman) {
 			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
 
@@ -579,6 +564,23 @@ void game::automataMove() {
 			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
 
 				nextState(actionState.second);
+				automataMove();
+			});
+		}
+	}
+	//player 1 move
+	else {
+		if (!player1IsHuman) {
+			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
+
+				auto actionState = player1->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
+					player1IsBlack ? moveTimeLimitBlack : moveTimeLimitWhite);
+
+				return actionState;
+			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
+
+				nextState(actionState.second);
+				automataMove();
 			});
 		}
 	}
