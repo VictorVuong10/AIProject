@@ -45,6 +45,13 @@ int testcaseManager::rowColToIndex(char row, int col) {
 
 std::string testcaseManager::stateToNotation(std::bitset<128U> state) {
 	std::string res;
+	auto cmp = [](std::string a, std::string b) { 
+		return a[2] == b[2] ?
+					a[0] == b[0] ?
+						a[1] < b[1] : a[0] < b[0]
+					: a[2] < b[2]; 
+	};
+	std::set<std::string, decltype(cmp)> sorter{cmp};
 	auto stateIndex = 0u;
 	for (auto row = 0u; row < 9; ++row) {
 		char rowChar = 8u - row + 'A';
@@ -53,10 +60,14 @@ std::string testcaseManager::stateToNotation(std::bitset<128U> state) {
 			bool white = state[stateIndex];
 			if (white || state[stateIndex + 1]) {
 				auto rCol = row < 4 ? 10 - colNum + col : col + 1;
-				res += (rowChar + std::to_string(rCol) + (white ? "w" : "b") + " ");
+				sorter.insert(rowChar + std::to_string(rCol) + (white ? "w" : "b"));
 			}
 			stateIndex += 2;
 		}
+	}
+	for (auto s : sorter) {
+		res += s;
+		res += ',';
 	}
 	return res.substr(0, res.size() - 1);
 }
@@ -64,8 +75,8 @@ std::string testcaseManager::stateToNotation(std::bitset<128U> state) {
 void testcaseManager::writeOutputToFile(const std::string& path, std::vector<std::pair<logic::action, std::bitset<128U>>> states) {
 	std::ofstream stateFile;
 	std::ofstream actionFile;
-	stateFile.open(path + ".state");
-	actionFile.open(path + ".action");
+	stateFile.open(path + "board");
+	actionFile.open(path + "move");
 	if (stateFile.fail() || actionFile.fail()) {
 		std::cout << "FAILED TO OPEN " << path << std::endl;
 		return;
@@ -124,9 +135,16 @@ void testcaseManager::runTestcase(int num) {
 	cout << printState(input[0]);
 	auto generated = logic::getAllValidMove(input[0], isBlackTurn);
 	writeOutputToFile(path, generated);
+	
+	cout << endl;
+}
+
+
+void testcaseManager::compareWithBoard(std::vector<std::pair<logic::action, std::bitset<128U>>> generated, std::string path) {
+
 	auto output = notationToState(path + "board");
 	auto outputSize = output.size();
-	cout << generated.size() << "/" << outputSize << endl;
+	std::cout << generated.size() << "/" << outputSize << std::endl;
 	int matched = 0;
 	for (auto iter = generated.begin(); iter != generated.end();) {
 		auto temp = iter->second;
@@ -143,18 +161,17 @@ void testcaseManager::runTestcase(int num) {
 			output.erase(iter2);
 		}
 	}
-	cout << matched << "/" << outputSize << " matched" << endl;
+	std::cout << matched << "/" << outputSize << " matched" << std::endl;
 
 	if (generated.size() != 0)
-		cout << endl << "Exceeded:" << endl;
+		std::cout << std::endl << "Exceeded:" << std::endl;
 	for (auto v : generated) {
-		cout << endl << printState(v.second) << endl;
-		cout << v.first.count << " " << v.first.index << " " << v.first.direction << endl;
+		std::cout << std::endl << printState(v.second) << std::endl;
+		std::cout << v.first.count << " " << v.first.index << " " << v.first.direction << std::endl;
 	}
 	if (output.size() != 0)
-		cout << endl << "Don't have:" << endl;
+		std::cout << std::endl << "Don't have:" << std::endl;
 	for (auto v : output) {
-		cout << endl << printState(v) << endl;
+		std::cout << std::endl << printState(v) << std::endl;
 	}
-	cout << endl;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <set>
 #include <fstream>
 #include <sstream>
 #include <bitset>
@@ -26,6 +27,7 @@ public:
 	//static void runAllTestcases();
 
 	static void runTestcase(int num);
+	static void compareWithBoard(std::vector<std::pair<logic::action, std::bitset<128U>>> generated, std::string path);
 	
 private:
 	testcaseManager() = default;
