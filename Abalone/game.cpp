@@ -422,7 +422,7 @@ void game::initMoveCounter()
 #pragma region game_state_setters
 
 void game::startGame() {
-	if (!(progress & (gameProgress::NOT_STARTED | gameProgress::PAUSED)) 
+	if ((progress != gameProgress::NOT_STARTED && !(progress & gameProgress::PAUSED)) 
 		|| state == std::bitset<128U>{INIT_STATES[EMPTY]}) {
 		return;
 	}
