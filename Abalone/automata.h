@@ -4,6 +4,7 @@
 #include "logic.h"
 #include <bitset>
 #include <functional>
+#include <queue>
 
 class automata
 {
@@ -34,11 +35,14 @@ public:
 	std::pair<logic::action, std::bitset<128>> getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft);
 
 private:
+	std::mutex blocker;
+	std::mutex mtQ;
+	std::mutex mtVal;
 	int counter = 0;
 	sf::Clock clock;
 	heuristic h;
 	std::pair<logic::action, std::bitset<128>> alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int& moveLeft, int& timeLeft);
-	std::pair<logic::action, std::bitset<128>> maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
+	std::pair<std::pair<logic::action, std::bitset<128>>, int> maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
 	int maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int& timeLeft, int alpha, int beta);
 	int minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int& timeLeft, int alpha, int beta);
 	bool terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft);

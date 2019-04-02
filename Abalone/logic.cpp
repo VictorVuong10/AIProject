@@ -198,7 +198,7 @@ std::bitset<128U> logic::move(std::bitset<128U> state, action act, bool isBlackT
 }
 
 
-std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(std::bitset<128U> state, bool isBlackTurn) {
+std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(std::bitset<128U>& state, bool isBlackTurn) {
 	std::vector<std::pair<logic::action, std::bitset<128U>>> action_state{};
 
 	//count 1-3, index 0-60, direction 0-5

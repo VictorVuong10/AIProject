@@ -431,10 +431,10 @@ void game::startGame() {
 		extractPropertyNDisplay(moveCounterWhite, maxMovesEditText, maxMovesPerPlayer, "Moves: ");
 		extractPropertyNDisplay(timerTextBlack, moveTimeLimitEditText, moveTimeLimitBlack, "Black: ");
 		extractPropertyNDisplay(timerTextWhite, moveTimeLimitEditText2, moveTimeLimitWhite, "White: ");
-		if (!player1IsHuman) {
+		if (!player1IsHuman && player1 == nullptr) {
 			player1 = new automata{};
 		}
-		if (!player2IsHuman) {
+		if (!player2IsHuman && player2 == nullptr) {
 			player2 = new automata{};
 		}
 		gameState toBeSaved = { state, storedSec, isBlackTurn };
@@ -606,7 +606,9 @@ void game::nextState(std::bitset<128U> state) {
 	turnTimer.restart();
 	this->state = state;
 	gameBoard->setState(state);
-	setScoreFromState(state);
+	auto scores = logic::getScoreFromState(state);
+	blackLostText->setText("Black Lost: " + std::to_string(scores.x));
+	whiteLostText->setText("White Lost: " + std::to_string(scores.y));
 	gameState toBeSaved = { state, storedSec + clock.getElapsedTime().asSeconds(), !isBlackTurn };
 	std::cout << "Time used: " << toBeSaved.storedSec - history.top().storedSec << " seconds." << std::endl << std::endl;
 	history.push(toBeSaved);
@@ -616,6 +618,9 @@ void game::nextState(std::bitset<128U> state) {
 	else {
 		timerTextBlack->setText("Black: 0");
 	}
+	if (scores.x == 6 || scores.y == 6 || movesMade >= maxMovesPerPlayer << 1) {
+		stopGame();
+	}
 }
 
 #pragma endregion
@@ -623,9 +628,7 @@ void game::nextState(std::bitset<128U> state) {
 #pragma region helpers
 
 void game::setScoreFromState(std::bitset<128U>& state) {
-	auto scores = logic::getScoreFromState(state);
-	blackLostText->setText("Black Lost: " + std::to_string(scores.x));
-	whiteLostText->setText("White Lost: " + std::to_string(scores.y));
+	
 }
 
 void game::extractPropertyNDisplay(textbox * text, editText * editText, int& property, std::string label)
