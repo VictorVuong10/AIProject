@@ -2,7 +2,7 @@
 #include "gui.h"
 
 #pragma region constants
-
+int game::movesMade = 0;
 //std::string is readed backward into std::bitset
 
 /*
@@ -435,7 +435,8 @@ void game::startGame() {
 			player1 = new automata{};
 		}
 		if (!player2IsHuman) {
-			player2 = new automata{};
+			//TODO chnaged
+			player2 = new automata{1};
 		}
 		gameState toBeSaved = { state, storedSec, isBlackTurn };
 		history.push(toBeSaved);

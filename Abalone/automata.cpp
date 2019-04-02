@@ -1,10 +1,16 @@
 #include "automata.h"
+#include "game.h"
 
 const std::bitset<128U> automata::MASKS_BLACK{ "00000010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010" };
 const std::bitset<128U> automata::MASKS_WHITE{ "00000001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101" };
 
 automata::automata() : automata{ std::bind(&automata::basicHeuristic, this, std::placeholders::_1, std::placeholders::_2) }
 {
+}
+
+automata::automata(int test) : automata{ std::bind(&automata::johnHeuristic, this, std::placeholders::_1, std::placeholders::_2) }
+{
+
 }
 
 automata::automata(heuristic h) : h{ h }
@@ -113,16 +119,205 @@ bool automata::terminateTest(std::bitset<128U>& state, bool isBlack, unsigned in
 	return scores.x > 5 || scores.y > 5;
 }
 
+//int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
+//{
+//	auto scores = logic::getScoreFromState(state);
+//	auto scoreMean = isBlack ? scores.y - scores.x : scores.x - scores.y;
+//	auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;
+//	auto midMean = 0u;
+//	for (auto i = isBlack << 0; i < 122; i += 2) {
+//		if (state[i]) {
+//			midMean += MIDDLE_H[i >> 1];
+//		}
+//	}
+//	return midMean + 1000 * scoreMean;
+//}
+
 int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 {
 	auto scores = logic::getScoreFromState(state);
-	auto scoreMean = isBlack ? scores.y - scores.x : scores.x - scores.y;
-	auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;
+	auto scoreDifference = isBlack ? scores.y - scores.x : scores.x - scores.y;
+	int adjacencyScore = 0;
+	bool left;
+	bool topLeft;
+	bool topRight;
+	bool right;
+	bool downRight;
+	bool downLeft;
+	//Not yet
+	//auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;
 	auto midMean = 0u;
-	for (auto i = isBlack << 0; i < 122; i += 2) {
+	auto midMeanOpp = 0u;
+	for (auto i = isBlack << 0, k = !isBlack << 0; i < 122; i += 2, k += 2) {
+		//std::cout << "I " << i << std::endl;
 		if (state[i]) {
 			midMean += MIDDLE_H[i >> 1];
 		}
+		else if (state[k]) {
+
+				midMeanOpp += MIDDLE_H_OPP[k >> 1];
+
+		}
+		//Adjacency score maybe use bitwise with mask instead?
+		//Maybe use average distance between all marbles?
+		if (!isBlack && state[i] == 1 && state[i + 1] == 0)
+		{
+			//std::cout << "white" << std::endl;
+			int position = i >> 1;
+			//std::cout << "position" << position << std::endl;
+			//std::cout << "state" << (logic::MOVE_TABLE[position][1] << 1) << std::endl;
+			left = logic::MOVE_TABLE[position][0] << 1 >= 0 && logic::MOVE_TABLE[position][0] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][0] << 1] == 1 && state[(logic::MOVE_TABLE[position][0] << 1) + 1] == 0;
+			topLeft = logic::MOVE_TABLE[position][1] << 1 >= 0 && logic::MOVE_TABLE[position][1] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][1] << 1] == 1 && state[(logic::MOVE_TABLE[position][1] << 1) + 1] == 0;
+			topRight = logic::MOVE_TABLE[position][2] << 1 >= 0 && logic::MOVE_TABLE[position][2] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][2] << 1] == 1 && state[(logic::MOVE_TABLE[position][2] << 1) + 1] == 0;
+
+
+			right = (logic::MOVE_TABLE[position][3] << 1) >= 0 && (logic::MOVE_TABLE[position][3] << 1) <= 122
+				&& state[logic::MOVE_TABLE[position][3] << 1] == 1 && state[(logic::MOVE_TABLE[position][3] << 1) + 1] == 0;
+			downRight = logic::MOVE_TABLE[position][4] << 1 >= 0 && logic::MOVE_TABLE[position][4] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][4] << 1] == 1 && state[(logic::MOVE_TABLE[position][4] << 1) + 1] == 0;
+			downLeft = logic::MOVE_TABLE[position][5] << 1 >= 0 && logic::MOVE_TABLE[position][5] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][5] << 1] == 1 && state[(logic::MOVE_TABLE[position][5] << 1) + 1] == 0;
+			//std::cout << "before adj" << std::endl;
+			int adj = 1;
+			std::cout << "TOP part basic \n";
+			//highly clustered = exponential score
+			adj << left << topLeft << topRight << right << downRight << downLeft;
+			adjacencyScore += adj;
+		}
+		else if (isBlack && state[i] == 0 && state[i + 1] == 1)
+		{
+			//std::cout << "white" << std::endl;
+			int position = i >> 1;
+			//std::cout << "position" << position << std::endl;
+			//std::cout << "state" << (logic::MOVE_TABLE[position][1] << 1) << std::endl;
+			left = logic::MOVE_TABLE[position][0] << 1 >= 0 && logic::MOVE_TABLE[position][0] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][0] << 1] == 0 && state[(logic::MOVE_TABLE[position][0] << 1) + 1] == 1;
+			topLeft = logic::MOVE_TABLE[position][1] << 1 >= 0 && logic::MOVE_TABLE[position][1] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][1] << 1] == 0 && state[(logic::MOVE_TABLE[position][1] << 1) + 1] == 1;
+			topRight = logic::MOVE_TABLE[position][2] << 1 >= 0 && logic::MOVE_TABLE[position][2] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][2] << 1] == 0 && state[(logic::MOVE_TABLE[position][2] << 1) + 1] == 1;
+
+
+			right = (logic::MOVE_TABLE[position][3] << 1) >= 0 && (logic::MOVE_TABLE[position][3] << 1) <= 122
+				&& state[logic::MOVE_TABLE[position][3] << 1] == 0 && state[(logic::MOVE_TABLE[position][3] << 1) + 1] == 1;
+			downRight = logic::MOVE_TABLE[position][4] << 1 >= 0 && logic::MOVE_TABLE[position][4] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][4] << 1] == 0 && state[(logic::MOVE_TABLE[position][4] << 1) + 1] == 1;
+			downLeft = logic::MOVE_TABLE[position][5] << 1 >= 0 && logic::MOVE_TABLE[position][5] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][5] << 1] == 0 && state[(logic::MOVE_TABLE[position][5] << 1) + 1] == 1;
+			//std::cout << "before adj" << std::endl;
+			int adj = 1;
+			//highly clustered = exponential score
+			adj << left << topLeft << topRight << right << downRight << downLeft;
+			adjacencyScore += adj;
+		}
 	}
-	return midMean + 1000 * scoreMean;
+	int moveScore;
+	if (game::movesMade == 0) {
+		 moveScore = 1;
+	}
+	else {
+
+
+		 moveScore = game::movesMade;
+	}
+
+	if (midMean < 27) {
+		return ((20 * midMean) + (adjacencyScore * 50) + (midMeanOpp * 20) + (5000 * scoreDifference) / moveScore);
+	}
+
+	return ((50 * midMean * adjacencyScore) + (midMeanOpp * 50) + (7500 * scoreDifference)/ moveScore);
+}
+
+
+int automata::johnHeuristic(std::bitset<128U>& state, bool isBlack)
+{
+	auto scores = logic::getScoreFromState(state);
+	auto scoreDifference = isBlack ? scores.y - scores.x : scores.x - scores.y;
+	int adjacencyScore = 0;
+	bool left;
+	bool topLeft;
+	bool topRight;
+	bool right;
+	bool downRight;
+	bool downLeft;
+	//Not yet
+	//auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;
+	auto midMean = 0u;
+	auto midMeanOpp = 0u;
+	for (auto i = isBlack << 0, k = !isBlack << 0; i < 122; i += 2, k+=2) {
+		//std::cout << "I " << i << std::endl;
+		if (state[i]) {
+			midMean += MIDDLE_H[i >> 1];
+		}
+		else if (state[k]) {
+
+			if (k == 31) {
+				midMeanOpp += 5;
+			}
+			else {
+
+				midMeanOpp += MIDDLE_H[i >> 1];
+			}
+
+
+		}
+		//Adjacency score maybe use bitwise with mask instead?
+		//Maybe use average distance between all marbles?
+		if (!isBlack && state[i] == 1 && state[i + 1] == 0)
+		{
+			//std::cout << "white" << std::endl;
+			int position = i >> 1;
+			//std::cout << "position" << position << std::endl;
+			//std::cout << "state" << (logic::MOVE_TABLE[position][1] << 1) << std::endl;
+			left = logic::MOVE_TABLE[position][0] << 1 >= 0 && logic::MOVE_TABLE[position][0] << 1 <=122
+				&& state[logic::MOVE_TABLE[position][0] << 1] == 1 && state[(logic::MOVE_TABLE[position][0] << 1) + 1] == 0;
+			topLeft = logic::MOVE_TABLE[position][1] << 1 >= 0 && logic::MOVE_TABLE[position][1] << 1 <= 122 
+				&& state[logic::MOVE_TABLE[position][1] << 1] == 1 && state[(logic::MOVE_TABLE[position][1] << 1) + 1] == 0;
+			topRight = logic::MOVE_TABLE[position][2] << 1 >= 0 && logic::MOVE_TABLE[position][2] << 1 <= 122 
+				&& state[logic::MOVE_TABLE[position][2] << 1] == 1 && state[(logic::MOVE_TABLE[position][2]  << 1) + 1] == 0;
+
+
+			right = (logic::MOVE_TABLE[position][3] << 1) >= 0 && (logic::MOVE_TABLE[position][3] << 1) <= 122 
+				&& state[logic::MOVE_TABLE[position][3] << 1] == 1 && state[(logic::MOVE_TABLE[position][3] << 1) + 1] == 0;
+			downRight = logic::MOVE_TABLE[position][4] << 1 >= 0 && logic::MOVE_TABLE[position][4] << 1 <= 122 
+				&& state[logic::MOVE_TABLE[position][4] << 1] == 1 && state[(logic::MOVE_TABLE[position][4] << 1) + 1] == 0;
+			downLeft = logic::MOVE_TABLE[position][5] << 1 >= 0 && logic::MOVE_TABLE[position][5] << 1 <= 122 
+				&& state[logic::MOVE_TABLE[position][5] << 1] == 1 && state[(logic::MOVE_TABLE[position][5] << 1) + 1] == 0;
+			//std::cout << "before adj" << std::endl;
+			int adj = 1;
+			//highly clustered = exponential score
+			adj << left << topLeft << topRight << right << downRight << downLeft;
+			adjacencyScore += adj;
+		}
+		else if (isBlack && state[i] == 0 && state[i + 1] == 1)
+		{
+			int position = i >> 1;
+			//std::cout << "position" << position << std::endl;
+			//std::cout << "state" << (logic::MOVE_TABLE[position][1] << 1) << std::endl;
+			left = logic::MOVE_TABLE[position][0] << 1 >= 0 && logic::MOVE_TABLE[position][0] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][0] << 1] == 0 && state[(logic::MOVE_TABLE[position][0] << 1) + 1] == 1;
+			topLeft = logic::MOVE_TABLE[position][1] << 1 >= 0 && logic::MOVE_TABLE[position][1] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][1] << 1] == 0 && state[(logic::MOVE_TABLE[position][1] << 1) + 1] == 1;
+			topRight = logic::MOVE_TABLE[position][2] << 1 >= 0 && logic::MOVE_TABLE[position][2] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][2] << 1] == 0 && state[(logic::MOVE_TABLE[position][2] << 1) + 1] == 1;
+
+
+			right = (logic::MOVE_TABLE[position][3] << 1) >= 0 && (logic::MOVE_TABLE[position][3] << 1) <= 122
+				&& state[logic::MOVE_TABLE[position][3] << 1] == 0 && state[(logic::MOVE_TABLE[position][3] << 1) + 1] == 1;
+			downRight = logic::MOVE_TABLE[position][4] << 1 >= 0 && logic::MOVE_TABLE[position][4] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][4] << 1] == 0 && state[(logic::MOVE_TABLE[position][4] << 1) + 1] == 1;
+			downLeft = logic::MOVE_TABLE[position][5] << 1 >= 0 && logic::MOVE_TABLE[position][5] << 1 <= 122
+				&& state[logic::MOVE_TABLE[position][5] << 1] == 0 && state[(logic::MOVE_TABLE[position][5] << 1) + 1] == 1;
+			//std::cout << "before adj" << std::endl;
+			int adj = 1;
+			//highly clustered = exponential score
+			adj << left << topLeft << topRight << right << downRight << downLeft;
+			adjacencyScore += adj;
+		}
+	}
+
+	return (50 * midMean * adjacencyScore) + ((1/midMeanOpp) * 8 * 50) + (5000 * scoreDifference);
 }

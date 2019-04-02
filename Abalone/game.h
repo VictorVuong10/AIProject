@@ -55,6 +55,7 @@ public:
 	int getProgress();
 	bool trySelect(int index);
 	bool tryUnSelect(int index);
+	static int movesMade;
 
 private:
 	typedef struct {
@@ -71,7 +72,7 @@ private:
 	automata* player1;
 	automata* player2;
 
-	int movesMade;
+
 	int moveTimeLimitBlack;
 	int moveTimeLimitWhite;
 	int maxMovesPerPlayer;
