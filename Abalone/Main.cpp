@@ -16,7 +16,8 @@ int main() {
 
 	/*using namespace std;
 
-	bitset<128U> s{ game::STANDARD_STR };
+	bitset<128U> 
+	game::STANDARD_STR };
 	auto v = logic::getAllValidMove(s, 1);
 
 	cout << v.size() << endl;

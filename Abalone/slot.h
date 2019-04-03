@@ -10,11 +10,15 @@ private:
 	sf::CircleShape marble;
 	sf::VertexArray bg;
 	std::bitset<2U> state;
+	static int slotNumber;
 	bool selected;
 	bool empty;
 public:
 	static const sf::Color normalColor;
 	static const sf::Color selectedColor;
+
+
+	sf::Text slotInd;
 
 	slot() = default;
 	slot(float x, float y, float size, std::bitset<2U> state = std::bitset<2U>(0));
