@@ -3,11 +3,14 @@
 const std::bitset<128U> automata::MASKS_BLACK{ "00000010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010" };
 const std::bitset<128U> automata::MASKS_WHITE{ "00000001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101" };
 
-automata::automata() : automata{ std::bind(&automata::basicHeuristic, this, std::placeholders::_1, std::placeholders::_2) }
+//ThreadPool automata::threadPool{ 4 };
+
+automata::automata() : threadPool{threadNumber}
 {
+	h = std::bind(&automata::basicHeuristic, this, std::placeholders::_1, std::placeholders::_2);
 }
 
-automata::automata(heuristic h) : h{ h }
+automata::automata(heuristic h) : h{ h }, threadPool{ threadNumber }
 {
 }
 
@@ -18,6 +21,7 @@ automata::~automata()
 
 std::pair<logic::action, std::bitset<128>> automata::getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft)
 {
+	threadPool.wait();
 	clock.restart();
 	counter = 0;
 	if (moveLeft == 0) moveLeft = 4;
@@ -34,6 +38,7 @@ std::pair<logic::action, std::bitset<128>> automata::alphaBeta(std::bitset<128U>
 	std::pair<logic::action, std::bitset<128>> best;
 	int bestV = INT_MIN;
 	do {
+		returned = false;
 		auto r = maxTop(state, isBlack, depth, moveLeft, timeLeft, INT_MIN, INT_MAX);
 		if (r.second > bestV) {
 			best = r.first;
@@ -59,68 +64,105 @@ std::pair<std::pair<logic::action, std::bitset<128>>, int> automata::maxTop(std:
 	int bestV = INT_MIN;
 	std::pair<logic::action, std::bitset<128>> bestAs;
 
-	//unsigned short threadCount = 4;
-	//std::condition_variable cv;
-	//std::vector<std::thread> threadPool;
+	/*unsigned short threadCount = 4;
+	std::vector<std::thread> threadPool;
+	size_t stateIndex = 0;
 
-	//for (auto i = 0; i < threadCount; ++i) {
-	//	threadPool.emplace_back([&]() {
-	//		while (true) {
-	//			std::pair < logic::action, std::bitset<128>> onePair;
-	//			{
-	//				std::unique_lock<std::mutex>lock{ mtQ };
-	//				if (actionStates.empty()) {
-	//					cv.notify_one();
-	//					return;
-	//				}
-	//				else {
-	//					onePair = actionStates.back();
-	//					actionStates.pop_back();
-	//				}
-	//			}
-	//			int curV = minValue(onePair.second, !isBlack, depth - 1, moveLeft - 1, timeLeft, alpha, beta);
-	//			{
-	//				std::unique_lock<std::mutex> lock{ mtVal };
-	//				if (curV > bestV) {
-	//					bestV = curV;
-	//					bestAs = onePair;
-	//				}
-	//				alpha = std::max(alpha, bestV);
-	//			}
-	//		}
-	//	});
-	//}
-	//std::unique_lock<std::mutex> blockLck{ blocker };
-	//cv.wait_for(blockLck, std::chrono::milliseconds{ timeLeft - clock.getElapsedTime().asMilliseconds() });
-	//for (auto& t : threadPool) {
-	//	t.detach();
-	//}
+	for (auto i = 0; i < threadCount; ++i) {
+		threadPool.emplace_back([this, &stateIndex, &alpha, &beta, &actionStates, &bestV, &bestAs, isBlack, depth, moveLeft]() {
+			while (!returned) {
+				std::pair < logic::action, std::bitset<128>> onePair;
+				{
+					if (stateIndex >= actionStates.size()) {
+						cv.notify_all();
+						returned = true;
+						std::cout << "depth complete" << std::endl;
+						return;
+					}
+					else {
+						std::unique_lock<std::mutex>lock{ mtQ };
+						onePair = actionStates[stateIndex++];
+					}
+				}
+				int curV = minValue(onePair.second, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
+				if (returned)
+					return;
+				{
+					std::unique_lock<std::mutex> lock{ mtVal };
+					if (curV > bestV) {
+						bestV = curV;
+						bestAs = onePair;
+					}
+					alpha = std::max(alpha, bestV);
+				}
+			}
+		});
+	}
+	std::unique_lock<std::mutex> blockLck{ blocker };
+	cv.wait_for(blockLck, std::chrono::milliseconds{ timeLeft - clock.getElapsedTime().asMilliseconds() });
+	std::cout << "returned" << std::endl;
+	for (auto& t : threadPool) {
+		t.detach();
+	}
+	return { bestAs, bestV };*/
+
+	for (auto i = 0u; i < actionStates.size(); ++i) {
+		auto actualTime = timeLeft - clock.getElapsedTime().asMilliseconds();
+		auto curState = actionStates[i];
+		threadPool.schedule([this, curState, &bestV, i, isBlack, depth, moveLeft, &alpha, beta, &bestAs]() {
+			if (returned)
+				return;
+			auto oneState = curState.second;
+			int curV = minValue(oneState, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
+			if (returned)
+				return;
+			std::unique_lock<std::mutex> lck{ mtQ };
+			if (curV > bestV) {
+				bestV = curV;
+				bestAs = curState;
+			}
+			alpha = std::max(alpha, bestV);
+			
+			cv.notify_all();
+		});
+		if (i > threadNumber - 1) {
+			std::unique_lock<std::mutex> blockLck{ blocker };
+			if (cv.wait_for(blockLck, std::chrono::milliseconds{ actualTime }) == std::cv_status::timeout) {
+				std::cout << "timeout" << std::endl;
+				goto returning;
+			}
+		}
+	}
+	
+	
 
 	//threading
-	for (auto as : actionStates) {
+	/*for (auto as : actionStates) {
 		int curV = minValue(as.second, !isBlack, depth - 1, moveLeft - 1, timeLeft, alpha, beta);
 		if (curV > bestV) {
 			bestV = curV;
 			bestAs = as;
 		}
 		alpha = std::max(alpha , bestV);
-	}
-	
+	}*/
+returning:
+	std::cout << "returned" << std::endl;
+	returned = true;
 	return { bestAs, bestV };
 }
 
 int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth,
-	unsigned int moveLeft, int& timeLeft, int alpha, int beta)
+	unsigned int moveLeft, int alpha, int beta)
 {
-	if (timeLeft - clock.getElapsedTime().asMilliseconds() < 50)
+	if (returned)
 		return INT_MAX;
-	if (terminateTest(state, isBlack, depth, moveLeft, timeLeft)) {
+	if (terminateTest(state, isBlack, depth, moveLeft)) {
 		return h(state, isBlack);
 	}
 	auto actionStates = logic::getAllValidMove(state, isBlack);
 	int bestV = INT_MIN;
 	for (auto as : actionStates) {
-		bestV = std::max(bestV, minValue(as.second, !isBlack, depth - 1, moveLeft - 1, timeLeft, alpha, beta));
+		bestV = std::max(bestV, minValue(as.second, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
 		if (bestV > beta)
 			return INT_MAX;
 		alpha = std::max(alpha, bestV);
@@ -129,17 +171,17 @@ int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 }
 
 int automata::minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth,
-	unsigned int moveLeft, int& timeLeft, int alpha, int beta)
+	unsigned int moveLeft, int alpha, int beta)
 {
-	if (timeLeft - clock.getElapsedTime().asMilliseconds() < 50)
+	if (returned)
 		return INT_MIN;
-	if (terminateTest(state, !isBlack, depth, moveLeft, timeLeft)) {
+	if (terminateTest(state, !isBlack, depth, moveLeft)) {
 		return h(state, !isBlack);
 	}
 	auto actionStates = logic::getAllValidMove(state, isBlack);
 	int bestV = INT_MAX;
 	for (auto as : actionStates) {
-		bestV = std::min(bestV, maxValue(as.second, !isBlack, depth - 1, moveLeft - 1, timeLeft, alpha, beta));
+		bestV = std::min(bestV, maxValue(as.second, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
 		if (bestV < alpha)
 			return INT_MIN;
 		beta = std::min(beta, bestV);
@@ -147,7 +189,7 @@ int automata::minValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 	return bestV;
 }
 
-bool automata::terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int& timeLeft)
+bool automata::terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft)
 {
 	++counter;
 	//depth ran out
@@ -168,16 +210,19 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
 	auto midMean = 0u;
 	auto ajacentMean = 0u;
-	for (auto i = isBlack << 0; i < 122; i += 2) {
+	for (auto i = isBlack << 0, j = isBlack ^ 1; i < 122; i += 2, j += 2) {
 		if (state[i]) {
 			midMean += MIDDLE_H[i >> 1];
-			for (auto j = 0u; j < 6; ++j) {
-				auto adj = logic::MOVE_TABLE[i >> 1][j];
+			for (auto k = 3u; k < 6; ++k) {
+				auto adj = logic::MOVE_TABLE[i >> 1][k];
 				if (adj != -1 && state[(adj << 1) + (isBlack << 0)]) {
 					++ajacentMean;
 				}
 			}
 		}
+		if (state[j]) {
+			midMean -= MIDDLE_H[j >> 1];
+		}
 	}
-	return midMean + ajacentMean + 5000 * scoreMean;
+	return 5 * midMean + ajacentMean + 200 * scoreMean;
 }

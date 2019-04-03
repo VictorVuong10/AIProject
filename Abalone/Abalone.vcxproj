@@ -148,6 +148,7 @@
     <ClCompile Include="slot.cpp" />
     <ClCompile Include="testcaseManager.cpp" />
     <ClCompile Include="textbox.cpp" />
+    <ClCompile Include="ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="automata.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="slot.h" />
     <ClInclude Include="testcaseManager.h" />
     <ClInclude Include="textbox.h" />
+    <ClInclude Include="ThreadPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

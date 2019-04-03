@@ -5,6 +5,7 @@
 #include <bitset>
 #include <functional>
 #include <queue>
+#include "ThreadPool.h"
 
 class automata
 {
@@ -35,18 +36,21 @@ public:
 	std::pair<logic::action, std::bitset<128>> getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft);
 
 private:
+	const static int threadNumber = 4;
+	ThreadPool threadPool;
+	std::condition_variable cv;
 	std::mutex blocker;
 	std::mutex mtQ;
 	std::mutex mtVal;
+	bool returned = false;
 	int counter = 0;
 	sf::Clock clock;
 	heuristic h;
 	std::pair<logic::action, std::bitset<128>> alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int& moveLeft, int& timeLeft);
 	std::pair<std::pair<logic::action, std::bitset<128>>, int> maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
-	int maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int& timeLeft, int alpha, int beta);
-	int minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int& timeLeft, int alpha, int beta);
-	bool terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft);
+	int maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
+	int minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
+	bool terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft);
 
 	int basicHeuristic(std::bitset<128U>&, bool);
 };
-

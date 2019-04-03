@@ -496,6 +496,8 @@ void game::undoGame() {
 	if (progress != gameProgress::IN_PROGRESS || history.size() < 2)
 		return;
 	history.pop();
+	if (!player1IsHuman || !player2IsHuman)
+		history.pop();
 	gameState lastState = history.top();
 	state = lastState.state;
 	gameBoard->setState(state);

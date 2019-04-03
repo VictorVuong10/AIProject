@@ -72,6 +72,9 @@
     <ClCompile Include="automata.cpp">
       <Filter>Source Files\Service</Filter>
     </ClCompile>
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>Source Files\Service</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui.h">
@@ -114,6 +117,9 @@
       <Filter>Header Files\Model</Filter>
     </ClInclude>
     <ClInclude Include="automata.h">
+      <Filter>Header Files\Service</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
       <Filter>Header Files\Service</Filter>
     </ClInclude>
   </ItemGroup>
