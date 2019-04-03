@@ -1,32 +1,28 @@
 #include "slot.h"
 #include <iostream>
+#include "resourceManager.h"
 
 const sf::Color slot::normalColor{ 36,123,160 };
 const sf::Color slot::selectedColor{ 255,22,84 };
 
 int slot::slotNumber = 0;
 
-slot::slot(float x, float y, float size, std::bitset<2U> state) : marble(size * 0.8f), selected(false)
+slot::slot(float x, float y, float size, std::string row, std::bitset<2U> state) : marble(size * 0.8f), selected(false)
 {
 	setState(state);
 	float r = marble.getRadius();
-	marble.setPosition(x - r, y - r);
+	marble.setPosition(x - r,y - r);
 
 	bg = buildHexagon(x, y, size, normalColor);
 
 	// set the text style
-	sf::Font font;
-	if (!font.loadFromFile("../arial.ttf")) {
-		std::cout << "font not loaded" << std::endl;
-	}
-	else {
-		//slotInd.setFont(font);
-		slotInd.setString(std::to_string(slotNumber));
-		++slotNumber;
-		slotInd.setCharacterSize(30);
-		slotInd.setPosition(x - r, y - r);
-		slotInd.setFillColor(selectedColor);
-	}
+
+	slotInd.setFont(resourceManager::instance.getFont("arial"));
+	slotInd.setString(std::to_string(slotNumber) + "\n" + row);
+	++slotNumber;
+	slotInd.setCharacterSize(17);
+	slotInd.setPosition(x - r + 17, y - r);
+	slotInd.setFillColor(selectedColor);
 
 	//slotInd.setFont(font);
 

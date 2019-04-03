@@ -224,6 +224,8 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 		adjacencyThis = adjacencyScoreWhite;
 	}
 
+	//i need a check that does if the score is >2 then make it 0 again want to be on defense perm
+
 	//this wont work we need a way to keep the movescore in the state?
 	//int moveScore;
 	//if (game::movesMade == 0) {
