@@ -218,6 +218,49 @@ std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(
 	return action_state;
 }
 
+std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMoveOrdered(std::bitset<128U>& state, bool isBlackTurn) {
+	auto cmp = [&](std::pair<logic::action, std::bitset<128U>> a, std::pair<logic::action, std::bitset<128U>> b) {
+		
+		int aCount = a.first.count;
+		int bCount = b.first.count;
+
+		//inline
+		if (aCount == 1 && bCount == 1) {
+			int diffA = 0;
+			int diffB = 0;
+			for (int i = 0; i < 122; ++i) {
+				if (state[i] != a.second[i])
+					++diffA;
+				if (state[i] != b.second[i])
+					++diffB;
+			}
+			return diffA > diffB;
+		}
+		else if (aCount == 1 || bCount == 1) {
+			return aCount == 1;
+		}
+		return a.first.count > b.first.count;
+	};
+	/*std::priority_queue <std::pair<logic::action, std::bitset<128U>>, std::vector<std::pair<logic::action, std::bitset<128U>>>, decltype(cmp)> action_state{cmp};*/
+
+	std::vector<std::pair<logic::action, std::bitset<128U>>> action_state;
+	//count 1-3, index 0-60, direction 0-5
+	for (auto bitindex = isBlackTurn << 0; bitindex < 122; bitindex += 2) {
+		if (state[bitindex]) {
+			for (int direction = 0; direction < 6; ++direction) {
+				for (int count = 1; count < 4; ++count) {
+					action act{ count, (bitindex - (isBlackTurn << 0)) >> 1, direction };
+					auto nstate = move(state, act, isBlackTurn);
+					if (nstate != state) {
+						action_state.push_back({ act, nstate });
+					}
+				}
+			}
+		}
+	}
+	std::sort(action_state.begin(), action_state.end(), cmp);
+	return action_state;
+}
 
 sf::Vector2u logic::getScoreFromState(std::bitset<128U>& state) {
 	auto whiteLost = 0u, blackLost = 0u;
