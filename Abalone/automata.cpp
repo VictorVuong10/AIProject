@@ -60,7 +60,7 @@ std::pair<logic::action, std::bitset<128>> automata::alphaBeta(std::bitset<128U>
 std::pair<std::pair<logic::action, std::bitset<128>>, int> automata::maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth,
 	unsigned int moveLeft, int& timeLeft, int alpha, int beta)
 {
-	auto actionStates = logic::getAllValidMove(state, isBlack);
+	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MIN;
 	std::pair<logic::action, std::bitset<128>> bestAs;
 
@@ -159,7 +159,7 @@ int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 	if (terminateTest(state, isBlack, depth, moveLeft)) {
 		return h(state, isBlack);
 	}
-	auto actionStates = logic::getAllValidMove(state, isBlack);
+	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MIN;
 	for (auto as : actionStates) {
 		bestV = std::max(bestV, minValue(as.second, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
@@ -178,7 +178,7 @@ int automata::minValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 	if (terminateTest(state, !isBlack, depth, moveLeft)) {
 		return h(state, !isBlack);
 	}
-	auto actionStates = logic::getAllValidMove(state, isBlack);
+	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MAX;
 	for (auto as : actionStates) {
 		bestV = std::min(bestV, maxValue(as.second, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
@@ -209,20 +209,14 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 	auto scoreMean = isBlack ? scores.y - scores.x : scores.x - scores.y;
 	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
 	auto midMean = 0u;
-	auto ajacentMean = 0u;
 	for (auto i = isBlack << 0, j = isBlack ^ 1; i < 122; i += 2, j += 2) {
 		if (state[i]) {
 			midMean += MIDDLE_H[i >> 1];
-			for (auto k = 3u; k < 6; ++k) {
-				auto adj = logic::MOVE_TABLE[i >> 1][k];
-				if (adj != -1 && state[(adj << 1) + (isBlack << 0)]) {
-					++ajacentMean;
-				}
-			}
+			
 		}
 		if (state[j]) {
 			midMean -= MIDDLE_H[j >> 1];
 		}
 	}
-	return 5 * midMean + ajacentMean + 200 * scoreMean;
+	return 5 * midMean + 200 * scoreMean;
 }

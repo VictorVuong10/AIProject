@@ -441,13 +441,20 @@ void game::startGame() {
 		history.push(toBeSaved);
 	}
 	progress = gameProgress::IN_PROGRESS;
-	if (!player1IsHuman || !player2IsHuman) {
-		automataMove();
-	}
-
 	clock.restart();
 	turnTimer.restart();
 	std::cout << "Game START." << std::endl << std::endl;
+	if (!player1IsHuman || !player2IsHuman) {
+		if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && player2IsHuman))) {
+			auto validMoves = logic::getAllValidMove(state, isBlackTurn);
+			auto randomMove = validMoves[rand() % validMoves.size()];
+			nextState(randomMove.second);
+			automataMove();
+		}
+		else {
+			automataMove();
+		}
+	}
 }
 
 void game::stopGame()
