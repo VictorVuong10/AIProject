@@ -35,6 +35,10 @@ public:
 
 	std::pair<logic::action, std::bitset<128>> getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft);
 
+	int advanceHeuristic(std::bitset<128U>& state, bool isBlack);
+
+	int basicHeuristic(std::bitset<128U>&, bool);
+
 private:
 	const static int threadNumber = 4;
 	ThreadPool threadPool;
@@ -52,5 +56,4 @@ private:
 	int minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
 	bool terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft);
 
-	int basicHeuristic(std::bitset<128U>&, bool);
 };

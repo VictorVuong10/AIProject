@@ -435,7 +435,8 @@ void game::startGame() {
 			player1 = new automata{};
 		}
 		if (!player2IsHuman && player2 == nullptr) {
-			player2 = new automata{};
+			//player2 = new automata{};
+			player2 = new automata{ std::bind(&automata::advanceHeuristic, player2, std::placeholders::_1, std::placeholders::_2)};
 		}
 		gameState toBeSaved = { state, storedSec, isBlackTurn };
 		history.push(toBeSaved);

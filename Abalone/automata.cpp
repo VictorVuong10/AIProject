@@ -40,7 +40,7 @@ std::pair<logic::action, std::bitset<128>> automata::alphaBeta(std::bitset<128U>
 	do {
 		returned = false;
 		auto r = maxTop(state, isBlack, depth, moveLeft, timeLeft, INT_MIN, INT_MAX);
-		if (r.second > bestV) {
+		if (r.second >= bestV) {
 			best = r.first;
 			bestV = r.second;
 		}
@@ -53,7 +53,7 @@ std::pair<logic::action, std::bitset<128>> automata::alphaBeta(std::bitset<128U>
 		std::cout << "Best Action: " << best.first.count << " "<< best.first.direction << " " << best.first.index << std::endl;
 
 		++depth;
-	} while (depth < moveLeft && timeLeft- miliSec > lastLayerUsed);
+	} while (depth < moveLeft && timeLeft- miliSec > lastLayerUsed * 7);
 	return best;
 }
 
@@ -203,20 +203,74 @@ bool automata::terminateTest(std::bitset<128U>& state, bool isBlack, unsigned in
 	return scores.x > 5 || scores.y > 5;
 }
 
-int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
+int automata::advanceHeuristic(std::bitset<128U>& state, bool isBlack)
 {
 	auto scores = logic::getScoreFromState(state);
-	auto scoreMean = isBlack ? scores.y - scores.x : scores.x - scores.y;
+	int scoreMean = isBlack ? static_cast<int>(scores.y) - static_cast<int>(scores.x)
+		: static_cast<int>(scores.x) - static_cast<int>(scores.y);
 	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
 	auto midMean = 0u;
+	auto spyMean = 0u;
+	auto hexMean = 0u;
 	for (auto i = isBlack << 0, j = isBlack ^ 1; i < 122; i += 2, j += 2) {
 		if (state[i]) {
-			midMean += MIDDLE_H[i >> 1];
-			
+			midMean += MIDDLE_H[i >> 1] << 1;
+			auto diff = 0u;
+			auto same = 0u;
+			for (auto k = 0u; k < 6; ++k) {
+				auto adj = logic::MOVE_TABLE[i >> 1][k];
+				if (adj == -1) {
+					goto h_end_if;
+				}
+				if (state[(adj << 1) + (isBlack << 0)]) {
+					++same;
+				}
+				if (state[(adj << 1) + (isBlack ^ 1)]) {
+					++diff;
+				}
+			}
+			if (diff > 5) {
+				++spyMean;
+			}
+			if (same == 6) {
+				++hexMean;
+			}
+
 		}
+		h_end_if:
 		if (state[j]) {
 			midMean -= MIDDLE_H[j >> 1];
 		}
 	}
-	return 5 * midMean + 200 * scoreMean;
+	return 5 * midMean + 10 * spyMean + 2 * hexMean + 200 * scoreMean;
+}
+
+int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
+{
+	auto scores = logic::getScoreFromState(state);
+	int scoreMean = isBlack ? static_cast<int>(scores.y) - static_cast<int>(scores.x) 
+		: static_cast<int>(scores.x) - static_cast<int>(scores.y);
+	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
+	auto midMean = 0u;
+	auto hexMean = 0u;
+	for (auto i = isBlack << 0, j = isBlack ^ 1; i < 122; i += 2, j += 2) {
+		if (state[i]) {
+			midMean += MIDDLE_H[i >> 1] << 1;
+			auto diff = 0u;
+			auto same = 0u;
+			for (auto k = 0u; k < 6; ++k) {
+				auto adj = logic::MOVE_TABLE[i >> 1][k];
+				if (adj == -1 || !state[(adj << 1) + (isBlack << 0)]) {
+					goto h_end_if;
+				}
+				++hexMean;
+			}
+
+		}
+	h_end_if:
+		if (state[j]) {
+			midMean -= MIDDLE_H[j >> 1];
+		}
+	}
+	return 5 * midMean + 2 * hexMean + 200 * scoreMean;
 }
