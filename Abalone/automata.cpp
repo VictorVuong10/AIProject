@@ -69,8 +69,11 @@ std::pair<std::pair<logic::action, std::bitset<128>>, int> automata::maxTop(std:
 		}
 		alpha = std::max(alpha , bestV);
 	}*/
+	{
+		std::unique_lock<std::mutex> valueLck{ mtVal };
+		sharedVal = maxTopGlobal{state, isBlack, depth, moveLeft, timeLeft, logic::getAllValidMoveOrdered(state, isBlack) };
+	}
 
-	sharedVal = maxTopGlobal{state, isBlack, depth, moveLeft, timeLeft, logic::getAllValidMoveOrdered(state, isBlack) };
 
 	/*unsigned short threadCount = 4;
 	std::vector<std::thread> threadPool;
