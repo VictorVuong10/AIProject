@@ -27,30 +27,6 @@ public:
 		   1, 1, 1, 1, 1,
 	};
 
-	static constexpr unsigned int MIDDLE_H_VIC[61] = {
-	   0, 0, 0, 0, 0,
-	  0, 1, 1, 1, 1, 0,
-	 0, 1, 2, 2, 2, 1, 0,
-	0, 1, 4, 4, 4, 2, 1, 0,
-   0, 1, 2, 4, 6, 4, 2, 1, 0,
-	0, 1, 2, 4, 4, 2, 1, 0,
-	 0, 1, 2, 2, 2, 1, 0,
-	  0, 1, 1, 1, 1, 0,
-	   0, 0, 0, 0, 0,
-	};
-
-	static constexpr unsigned int MIDDLE_H_OPP[61] = {
-		   6, 6, 6, 6, 6,
-		  6, 5, 5, 5, 5, 6,
-		 6, 5, 2, 2, 2, 5, 6,
-		6, 5, 2, 0, 0, 2, 5, 6,
-	   6, 5, 2, 0, 0, 0, 2, 5, 6,
-		6, 5, 2, 0, 0, 2, 5, 6,
-		 6, 5, 2, 2, 2, 5, 6,
-		  6, 5, 5, 5, 5, 6,
-		   6, 6, 6, 6, 6,
-	};
-
 	automata();
 
 	automata(heuristic h);
@@ -77,5 +53,4 @@ private:
 	bool terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft);
 
 	int basicHeuristic(std::bitset<128U>&, bool);
-	int testHeuristic(std::bitset<128U>&, bool);
 };

@@ -512,7 +512,6 @@ void game::undoGame() {
 	storedSec = lastState.storedSec;
 	storedTurnSec = 0;
 	isBlackTurn = !lastState.isBlackTurn;
-	movesMade -= 2;
 	clock.restart();
 	turnTimer.restart();
 	progress = gameProgress::PAUSED;

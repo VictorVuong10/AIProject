@@ -29,25 +29,7 @@ void board::initAllSlots(float x, float y, float size) {
 		for (size_t j = 0; j < slotNumber; ++j) {
 			//slotState is reversed again
 			std::bitset<2U> slotState = boardState[slotIndex] << 1 | boardState[slotIndex + 1] << 0;
-
-			char row = 'I' - i;
-
-			std::string a;
-
-			a += row;
-
-			int cellNum;
-
-			if (i < 5) {
-				cellNum = rowDiff + 1 + j;
-			}
-			else {
-
-				cellNum = j + 1;
-			}
-
-			a += std::to_string(cellNum);
-			slot* s = new slot{ xinit, yinit, slotSize, a, slotState };
+			slot* s = new slot{ xinit, yinit, slotSize, slotState };
 			s->registerHandler(new std::function<void(sf::Event&)>{ [&, s, slotIndex](sf::Event e) {
 				auto sState = s->getState();
 				if (sState.none() || sState[0] != _game->getIsBlackTurn())
