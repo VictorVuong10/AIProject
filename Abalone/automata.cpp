@@ -118,20 +118,25 @@ std::pair<std::pair<logic::action, std::bitset<128>>, int> automata::maxTop(std:
 		auto actualTime = sharedVal.time - clock.getElapsedTime().asMilliseconds();
 		threadPool.schedule([this, i]() {
 			//before check
-			if (sharedVal.stopped)
-				return;
-			auto curState = sharedVal.actionStates[i];
+			std::pair<logic::action, std::bitset<128>> curState;
+			{
+				std::unique_lock<std::mutex> valueLck{ mtVal };
+				if (sharedVal.stopped)
+					return;
+				curState = sharedVal.actionStates[i];
+			}
 
 			//time consumming call
 			int curV = minValue(curState.second, !sharedVal.isBlack, sharedVal.depth - 1,
 				sharedVal.moveLeft - 1, sharedVal.alpha, sharedVal.beta);
 			
+			
+			//lock before access
+			std::unique_lock<std::mutex> valueLck{ mtVal };
 			//after check
 			if (sharedVal.stopped)
 				return;
-
-			//lock before access
-			std::unique_lock<std::mutex> valueLck{ mtVal };
+			
 			if (curV > sharedVal.bestV) {
 				sharedVal.bestV = curV;
 				sharedVal.bestAs = curState;
@@ -146,13 +151,15 @@ std::pair<std::pair<logic::action, std::bitset<128>>, int> automata::maxTop(std:
 			std::unique_lock<std::mutex> blockLck{ blocker };
 			if (cv.wait_for(blockLck, std::chrono::milliseconds{ actualTime }) == std::cv_status::timeout) {
 				//timeout and abandom uncompleted level
+				std::unique_lock<std::mutex> valueLck{ mtVal };
 				std::cout << "<timeout>" << std::endl;
 				sharedVal.stopped = true;
 				return { sharedVal.bestAs, INT_MIN };
 			}
 		}
 	}
-	
+
+	std::unique_lock<std::mutex> valueLck{ mtVal };
 	std::cout << "<completed>" << std::endl;
 	sharedVal.stopped = true;
 	return { sharedVal.bestAs, sharedVal.bestV };
