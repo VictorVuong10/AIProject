@@ -12,6 +12,25 @@ class automata
 public:
 	typedef std::function<int(std::bitset<128U>&, bool)> heuristic;
 
+	struct maxTopGlobal {
+		std::bitset<128U> state;
+		bool isBlack;
+		int alpha;
+		int beta;
+		unsigned int depth;
+		unsigned int moveLeft;
+		int time;
+		std::vector<std::pair<logic::action, std::bitset<128>>> actionStates;
+		bool stopped;
+		int bestV;
+		std::pair<logic::action, std::bitset<128>> bestAs;
+		maxTopGlobal() = default;
+		maxTopGlobal(std::bitset<128U> state, bool isBlack, unsigned int depth, unsigned int moveLeft, int time,
+			std::vector<std::pair<logic::action, std::bitset<128>>> actionStates)
+			:state{ state }, isBlack{isBlack}, alpha{ INT_MIN }, beta{ INT_MAX }, depth{ depth },
+			moveLeft{ moveLeft }, time{ time }, actionStates{ std::move(actionStates) }, stopped{ false }, bestV{ INT_MIN }, bestAs{}{};
+	};
+
 	static const std::bitset<128U> MASKS_BLACK;
 	static const std::bitset<128U> MASKS_WHITE;
 
@@ -29,7 +48,7 @@ public:
 
 	automata();
 
-	automata(heuristic h);
+	automata(std::function<int(std::bitset<128U>&, bool)> & h);
 
 	~automata();
 
@@ -39,10 +58,12 @@ private:
 	const static int threadNumber = 4;
 	ThreadPool threadPool;
 	std::condition_variable cv;
+
 	std::mutex blocker;
 	std::mutex mtQ;
 	std::mutex mtVal;
-	bool returned = false;
+	maxTopGlobal sharedVal;
+
 	int counter = 0;
 	sf::Clock clock;
 	heuristic h;

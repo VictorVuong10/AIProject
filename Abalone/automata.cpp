@@ -10,7 +10,7 @@ automata::automata() : threadPool{threadNumber}
 	h = std::bind(&automata::basicHeuristic, this, std::placeholders::_1, std::placeholders::_2);
 }
 
-automata::automata(heuristic h) : h{ h }, threadPool{ threadNumber }
+automata::automata(std::function<int(std::bitset<128U>&, bool)> & h) : h{ h }, threadPool{ threadNumber }
 {
 }
 
@@ -38,7 +38,6 @@ std::pair<logic::action, std::bitset<128>> automata::alphaBeta(std::bitset<128U>
 	std::pair<logic::action, std::bitset<128>> best;
 	int bestV = INT_MIN;
 	do {
-		returned = false;
 		auto r = maxTop(state, isBlack, depth, moveLeft, timeLeft, INT_MIN, INT_MAX);
 		if (r.second > bestV) {
 			best = r.first;
@@ -60,9 +59,18 @@ std::pair<logic::action, std::bitset<128>> automata::alphaBeta(std::bitset<128U>
 std::pair<std::pair<logic::action, std::bitset<128>>, int> automata::maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth,
 	unsigned int moveLeft, int& timeLeft, int alpha, int beta)
 {
-	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
-	int bestV = INT_MIN;
-	std::pair<logic::action, std::bitset<128>> bestAs;
+
+	//no thread.
+	/*for (auto as : actionStates) {
+		int curV = minValue(as.second, !isBlack, depth - 1, moveLeft - 1, timeLeft, alpha, beta);
+		if (curV > bestV) {
+			bestV = curV;
+			bestAs = as;
+		}
+		alpha = std::max(alpha , bestV);
+	}*/
+
+	sharedVal = maxTopGlobal{state, isBlack, depth, moveLeft, timeLeft, logic::getAllValidMoveOrdered(state, isBlack) };
 
 	/*unsigned short threadCount = 4;
 	std::vector<std::thread> threadPool;
@@ -106,55 +114,54 @@ std::pair<std::pair<logic::action, std::bitset<128>>, int> automata::maxTop(std:
 	}
 	return { bestAs, bestV };*/
 
-	for (auto i = 0u; i < actionStates.size(); ++i) {
-		auto actualTime = timeLeft - clock.getElapsedTime().asMilliseconds();
-		auto curState = actionStates[i];
-		threadPool.schedule([this, curState, &bestV, i, isBlack, depth, moveLeft, &alpha, beta, &bestAs]() {
-			if (returned)
+	for (auto i = 0u; i < sharedVal.actionStates.size(); ++i) {
+		auto actualTime = sharedVal.time - clock.getElapsedTime().asMilliseconds();
+		threadPool.schedule([this, i]() {
+			//before check
+			if (sharedVal.stopped)
 				return;
-			auto oneState = curState.second;
-			int curV = minValue(oneState, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
-			if (returned)
+			auto curState = sharedVal.actionStates[i];
+
+			//time consumming call
+			int curV = minValue(curState.second, !sharedVal.isBlack, sharedVal.depth - 1,
+				sharedVal.moveLeft - 1, sharedVal.alpha, sharedVal.beta);
+			
+			//after check
+			if (sharedVal.stopped)
 				return;
-			std::unique_lock<std::mutex> lck{ mtQ };
-			if (curV > bestV) {
-				bestV = curV;
-				bestAs = curState;
+
+			//lock before access
+			std::unique_lock<std::mutex> valueLck{ mtVal };
+			if (curV > sharedVal.bestV) {
+				sharedVal.bestV = curV;
+				sharedVal.bestAs = curState;
 			}
-			alpha = std::max(alpha, bestV);
+			sharedVal.alpha = std::max(sharedVal.alpha, sharedVal.bestV);
 			
 			cv.notify_all();
 		});
 		if (i > threadNumber - 1) {
+			
+			//block after all thread is running, when any thread done, notify to continue looping
 			std::unique_lock<std::mutex> blockLck{ blocker };
 			if (cv.wait_for(blockLck, std::chrono::milliseconds{ actualTime }) == std::cv_status::timeout) {
-				std::cout << "timeout" << std::endl;
-				goto returning;
+				//timeout and abandom uncompleted level
+				std::cout << "<timeout>" << std::endl;
+				sharedVal.stopped = true;
+				return { sharedVal.bestAs, INT_MIN };
 			}
 		}
 	}
 	
-	
-
-	//threading
-	/*for (auto as : actionStates) {
-		int curV = minValue(as.second, !isBlack, depth - 1, moveLeft - 1, timeLeft, alpha, beta);
-		if (curV > bestV) {
-			bestV = curV;
-			bestAs = as;
-		}
-		alpha = std::max(alpha , bestV);
-	}*/
-returning:
-	std::cout << "returned" << std::endl;
-	returned = true;
-	return { bestAs, bestV };
+	std::cout << "<completed>" << std::endl;
+	sharedVal.stopped = true;
+	return { sharedVal.bestAs, sharedVal.bestV };
 }
 
 int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth,
 	unsigned int moveLeft, int alpha, int beta)
 {
-	if (returned)
+	if (sharedVal.stopped)
 		return INT_MAX;
 	if (terminateTest(state, isBlack, depth, moveLeft)) {
 		return h(state, isBlack);
@@ -173,8 +180,8 @@ int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 int automata::minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth,
 	unsigned int moveLeft, int alpha, int beta)
 {
-	if (returned)
-		return INT_MIN;
+	if (sharedVal.stopped)
+		return  INT_MIN;
 	if (terminateTest(state, !isBlack, depth, moveLeft)) {
 		return h(state, !isBlack);
 	}
