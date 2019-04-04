@@ -448,7 +448,11 @@ void game::startGame() {
 	if (!player1IsHuman || !player2IsHuman) {
 		if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && player2IsHuman))) {
 			auto validMoves = logic::getAllValidMove(state, isBlackTurn);
-			auto randomMove = validMoves[rand() % validMoves.size()];
+			std::random_device rand_dev;
+			std::mt19937 generator(rand_dev());
+			std::uniform_int_distribution<int>  distr(0, validMoves.size() - 1);
+			int randomState = distr(generator);
+			auto randomMove = validMoves[randomState];
 			nextState(randomMove.second);
 			automataMove();
 		}
@@ -512,6 +516,10 @@ void game::undoGame() {
 	setScoreFromState(state);
 	storedSec = lastState.storedSec;
 	storedTurnSec = 0;
+	movesMade -= 2;
+	auto moveLeft = static_cast<int>(maxMovesPerPlayer - ceil(movesMade / 2.0));
+	moveCounterBlack->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
+	moveCounterWhite->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
 	isBlackTurn = !lastState.isBlackTurn;
 	clock.restart();
 	turnTimer.restart();
@@ -530,12 +538,16 @@ void game::resetGame() {
 	gameBoard->unSelectAll();
 	selectedIndex = {};
 	storedSec = 0;
+	movesMade = 0;
 	isBlackTurn = true;
 	timerText->setText("Timer: 0:0");
 	timerTextBlack->setText("Black: 0.0");
 	timerTextWhite->setText("White: 0.0");
 	blackLostText->setText("Black Lost: 0");
 	whiteLostText->setText("White Lost: 0");
+	auto moveLeft = static_cast<int>(maxMovesPerPlayer - ceil(movesMade / 2.0));
+	moveCounterBlack->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
+	moveCounterWhite->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
 	maxMovesEditText->setisEnbled(true);
 	moveTimeLimitEditText->setisEnbled(true);
 	moveTimeLimitEditText2->setisEnbled(true);

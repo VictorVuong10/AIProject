@@ -5,6 +5,7 @@
 #include <bitset>
 #include <set>
 #include <stack>
+#include <random>
 #include "textbox.h"
 #include "editText.h"
 #include "button.h"
