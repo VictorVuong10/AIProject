@@ -21,29 +21,29 @@ const std::string game::STANDARD_STR = "0000001010101010101010101010000010101000
 
 /*
 		0000000000
-	   101000000101
-	  10101000010101
-	 0010100000010100
-	000000000000000000
-	 0001010000101000
-	  01010100101010
 	   010100001010
+	  01010100101010
+	 0001010000101000
+	000000000000000000
+	 0010100000010100
+	  10101000010101
+	   101000000101
 		0000000000
 */
-const std::string game::GERMAN_DAISY_STR = "00000000000000001010000001011010100001010100101000000101000000000000000000000001010000101000010101001010100101000010100000000000";
+const std::string game::GERMAN_DAISY_STR = "00000000000000000101000010100101010010101000010100001010000000000000000000000010100000010100101010000101011010000001010000000000";
 
 /*
-		1010000101
-	   101010010101
-	  00101000010100
+		0101001010
+	   010101101010
+	  00010100101000
 	 0000000000000000
 	000000000000000000
 	 0000000000000000
-	  00010100101000
-	   010101101010
-		0101001010
+	  00101000010100
+	   101010010101
+		1010000101
 */
-const std::string game::BELGAIN_DAISY_STR = "00000010100001011010100101010010100001010000000000000000000000000000000000000000000000000000000101001010000101011010100101001010";
+const std::string game::BELGAIN_DAISY_STR = "00000001010010100101011010100001010010100000000000000000000000000000000000000000000000000000001010000101001010100101011010000101";
 
 const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, BELGAIN_DAISY_STR };
 
@@ -52,13 +52,15 @@ const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, B
 #pragma region constructor_destructor
 
 game::game() : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
-progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }, player1IsBlack{true}
+progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }, player1IsBlack{true},
+player1{ new automata{automata::advanceHeuristic} }, player2{ new automata{automata::advanceHeuristic} }
 {
 	initAllEle();
 }
 
 game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
-	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}, player1IsBlack{ true }
+	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}, player1IsBlack{ true },
+	player1{ new automata{automata::advanceHeuristic} }, player2{ new automata{automata::advanceHeuristic} }
 {
 	initAllEle();
 }
@@ -431,14 +433,7 @@ void game::startGame() {
 		extractPropertyNDisplay(moveCounterWhite, maxMovesEditText, maxMovesPerPlayer, "Moves: ");
 		extractPropertyNDisplay(timerTextBlack, moveTimeLimitEditText, moveTimeLimitBlack, "Black: ");
 		extractPropertyNDisplay(timerTextWhite, moveTimeLimitEditText2, moveTimeLimitWhite, "White: ");
-		if (!player1IsHuman && player1 == nullptr) {
-			player1 = new automata{};
-		}
-		if (!player2IsHuman && player2 == nullptr) {
-			//player2 = new automata{};
-			player2 = new automata{ std::bind(&automata::advanceHeuristic, player2, std::placeholders::_1, std::placeholders::_2)};
-		}
-		gameState toBeSaved = { state, storedSec, isBlackTurn };
+		gameState toBeSaved = { state, storedSec, !isBlackTurn };
 		history.push(toBeSaved);
 	}
 	progress = gameProgress::IN_PROGRESS;
@@ -446,7 +441,7 @@ void game::startGame() {
 	turnTimer.restart();
 	std::cout << "Game START." << std::endl << std::endl;
 	if (!player1IsHuman || !player2IsHuman) {
-		if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && player2IsHuman))) {
+		if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && !player2IsHuman))) {
 			auto validMoves = logic::getAllValidMove(state, isBlackTurn);
 			std::random_device rand_dev;
 			std::mt19937 generator(rand_dev());
@@ -508,22 +503,30 @@ void game::undoGame() {
 	if (progress != gameProgress::IN_PROGRESS || history.size() < 2)
 		return;
 	history.pop();
-	if (!player1IsHuman || !player2IsHuman)
+	movesMade -= 1;
+	if (!player1IsHuman || !player2IsHuman) {
 		history.pop();
+		movesMade -= 1;
+	}
 	gameState lastState = history.top();
 	state = lastState.state;
 	gameBoard->setState(state);
 	setScoreFromState(state);
 	storedSec = lastState.storedSec;
 	storedTurnSec = 0;
-	movesMade -= 2;
 	auto moveLeft = static_cast<int>(maxMovesPerPlayer - ceil(movesMade / 2.0));
 	moveCounterBlack->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
 	moveCounterWhite->setText("Moves: " + (moveLeft > 0 ? std::to_string(moveLeft) : "0"));
 	isBlackTurn = !lastState.isBlackTurn;
+	if (isBlackTurn) {
+		timerTextWhite->setText("White: 0");
+	}
+	else {
+		timerTextBlack->setText("Black: 0");
+	}
 	clock.restart();
 	turnTimer.restart();
-	progress = gameProgress::PAUSED;
+	//progress = gameProgress::PAUSED;
 	std::cout << "Undo last move." << std::endl << std::endl;
 }
 
@@ -538,6 +541,7 @@ void game::resetGame() {
 	gameBoard->unSelectAll();
 	selectedIndex = {};
 	storedSec = 0;
+	storedTurnSec = 0;
 	movesMade = 0;
 	isBlackTurn = true;
 	timerText->setText("Timer: 0:0");
@@ -584,18 +588,18 @@ void game::automataMove() {
 	//player 2 move
 	if (isBlackTurn ^ player1IsBlack) {
 		if (!player2IsHuman) {
-			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
+			ui->asyncAwait<logic::weightedActionState>([&] {
 
 				progress = (gameProgress::AI_SEARCHING | gameProgress::IN_PROGRESS);
 				auto actionState = player2->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
 					player1IsBlack ? moveTimeLimitWhite : moveTimeLimitBlack);
 
 				return actionState;
-			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
+			}, [&](logic::weightedActionState actionState) {
 				if (!(gameProgress::AI_SEARCHING & progress))
 					return;
 				progress = gameProgress::IN_PROGRESS;
-				nextState(actionState.second);
+				nextState(actionState.state);
 				automataMove();
 			});
 		}
@@ -603,18 +607,18 @@ void game::automataMove() {
 	//player 1 move
 	else {
 		if (!player1IsHuman) {
-			ui->asyncAwait<std::pair<logic::action, std::bitset<128U>>>([&] {
+			ui->asyncAwait<logic::weightedActionState>([&] {
 
 				progress = (gameProgress::AI_SEARCHING | gameProgress::IN_PROGRESS);
 				auto actionState = player1->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
 					player1IsBlack ? moveTimeLimitBlack : moveTimeLimitWhite);
 
 				return actionState;
-			}, [&](std::pair <logic::action, std::bitset<128U>> actionState) {
+			}, [&](logic::weightedActionState actionState) {
 				if (!(gameProgress::AI_SEARCHING & progress))
 					return;
 				progress = gameProgress::IN_PROGRESS;
-				nextState(actionState.second);
+				nextState(actionState.state);
 				automataMove();
 			});
 		}

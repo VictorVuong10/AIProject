@@ -139,9 +139,64 @@ void testcaseManager::runTestcase(int num) {
 	cout << endl;
 }
 
+void testcaseManager::runAllTestcasesCompare(int testcaseNum) {
+	for (int i = 1; i <= testcaseNum; ++i) {
+		runTestcaseCompare(i);
+	}
+}
 
-void testcaseManager::compareWithBoard(std::vector<std::pair<logic::action, std::bitset<128U>>> generated, std::string path) {
+void testcaseManager::runTestcaseCompare(int num) {
+	using namespace std;
 
+	cout << "Test Case " << num << endl;
+	string path = "../Test/Test" + to_string(num) + ".";
+	bool isBlackTurn = true;
+	auto input = notationToState(path + "input", &isBlackTurn);
+	cout << printState(input[0]);
+	auto generated = logic::getAllValidMoveOrdered(input[0], isBlackTurn);
+	compareWithBoardSet(generated, path);
+
+	cout << endl;
+}
+
+
+void testcaseManager::compareWithBoardSet(std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> generated, std::string path) {
+
+	auto output = notationToState(path + "board");
+	auto outputSize = output.size();
+	std::cout << generated.size() << "/" << outputSize << std::endl;
+	int matched = 0;
+	for (auto iter = generated.begin(); iter != generated.end();) {
+		auto temp = iter->state;
+		temp <<= 6;
+		temp >>= 6;
+		auto iter2 = find(output.begin(), output.end(), temp);
+		if (iter2 == output.end()) {
+			++iter;
+		}
+		else {
+			++matched;
+			iter = generated.erase(iter);
+			output.erase(iter2);
+		}
+	}
+	std::cout << matched << "/" << outputSize << " matched" << std::endl;
+
+	if (generated.size() != 0)
+		std::cout << std::endl << "Exceeded:" << std::endl;
+	for (auto v : generated) {
+		std::cout << std::endl << printState(v.state) << std::endl;
+		std::cout << v.act.act.count << " " << v.act.act.index << " " << v.act.act.direction << std::endl;
+	}
+	if (output.size() != 0)
+		std::cout << std::endl << "Don't have:" << std::endl;
+	for (auto v : output) {
+		std::cout << std::endl << printState(v) << std::endl;
+	}
+}
+
+void testcaseManager::compareWithBoard(std::vector<std::pair<logic::action, std::bitset<128U>>> generated, std::string path)
+{
 	auto output = notationToState(path + "board");
 	auto outputSize = output.size();
 	std::cout << generated.size() << "/" << outputSize << std::endl;

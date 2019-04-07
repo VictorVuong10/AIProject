@@ -33,11 +33,11 @@ public:
 
 	~automata();
 
-	std::pair<logic::action, std::bitset<128>> getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft);
+	logic::weightedActionState getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft);
 
-	int advanceHeuristic(std::bitset<128U>& state, bool isBlack);
+	static int advanceHeuristic(std::bitset<128U>& state, bool isBlack);
 
-	int basicHeuristic(std::bitset<128U>&, bool);
+	static int basicHeuristic(std::bitset<128U>&, bool);
 
 private:
 	const static int threadNumber = 4;
@@ -50,8 +50,8 @@ private:
 	int counter = 0;
 	sf::Clock clock;
 	heuristic h;
-	std::pair<logic::action, std::bitset<128>> alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int& moveLeft, int& timeLeft);
-	std::pair<std::pair<logic::action, std::bitset<128>>, int> maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
+	logic::weightedActionState alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int& moveLeft, int& timeLeft);
+	std::pair<logic::weightedActionState, int> maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
 	int maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
 	int minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
 	bool terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft);

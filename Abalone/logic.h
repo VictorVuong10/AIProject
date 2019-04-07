@@ -15,11 +15,51 @@
 class logic
 {
 public:
-	typedef struct {
+	struct action {
 		int count;
 		int index;
 		int direction;
-	} action;
+		action() = default;
+		bool operator>(const action & act) const {
+			return (count > act.count) || (index > act.index) || (direction > act.direction);
+		}
+		bool operator<(const action & act) const {
+			return (count < act.count) || (index < act.index) || (direction < act.direction);
+		}
+		bool operator==(const action & act) const {
+			return count == act.count && index == act.index && direction == act.direction;
+		}
+	};
+
+	struct weightedAction{
+		action act;
+		short teamCount;
+		short oppCount;
+		int alignDrr;
+		weightedAction() = default;
+		bool operator<(const weightedAction & wa) const {
+			return teamCount + oppCount < wa.teamCount + wa.oppCount;
+		}
+		bool operator>(const weightedAction & wa) const {
+			return teamCount + oppCount > wa.teamCount + wa.oppCount;
+		}
+	};
+
+	struct weightedActionState {
+		weightedAction act;
+		std::bitset<128U> state;
+		weightedActionState() = default;
+		weightedActionState(weightedAction act, std::bitset<128U>&& state) :act{ std::move(act) }, state{ std::move(state) }{}
+		bool operator<(const weightedActionState & wsa) const {
+			return act < wsa.act;
+		}
+		bool operator>(const weightedActionState & wsa) const {
+			return act > wsa.act;
+		}
+		bool operator==(const weightedActionState & wsa) const {
+			return act.act == wsa.act.act;
+		}
+	};
 
 	static constexpr int MOVE_TABLE[61][6] =
 	{
@@ -170,13 +210,33 @@ public:
 	
 	static std::bitset<128U> move(std::bitset<128U> state, action action, bool isBlackTurn);
 	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMove(std::bitset<128U>& state, bool isBlackTurn);
-	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMoveOrdered(std::bitset<128U>& state, bool isBlackTurn);
+	static std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> getAllValidMoveOrdered(std::bitset<128U>& state, bool isBlackTurn);
+
+	static inline bool isEmpty(int index, std::bitset<128U>& state) {
+		return !state[index << 1] && !state[(index << 1) + 1];
+	}
+	
+	static bool isValidMove_human(std::bitset<128U> state, action act, bool isBlackTurn);
 	static sf::Vector2u getScoreFromState(std::bitset<128U>& state);
+
+	static inline bool isValidMove_ai(std::bitset<128U> & state, weightedAction & act, bool isBlackTurn) {
+		return act.act.count == 1 ? isValidInlineMove(state, act, isBlackTurn) : isValidSideMove(state, act, isBlackTurn);
+	}
+	static bool isValidSideMove(std::bitset<128U> & state, weightedAction & act, bool isBlackTurn);
+	static bool isValidInlineMove(std::bitset<128U> & state, weightedAction & act, bool isBlackTurn);
+
+	static inline std::bitset<128U> move_ai(std::bitset<128U> state, weightedAction & act, bool isBlackTurn) {
+		return act.act.count == 1 ? inlineMove(state, act, isBlackTurn) : sideMove(state, act, isBlackTurn);
+	}
+	static std::bitset<128U>& inlineMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn);
+	static std::bitset<128U>& sideMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn);
 
 private:
 	logic() = default;
 
 	static std::bitset<128U>& sideMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
 	static std::bitset<128U>& inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
+
+	
 };
 
