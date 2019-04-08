@@ -355,12 +355,20 @@ std::bitset<128U>& logic::inlineMove(std::bitset<128U>& state, weightedAction & 
 	state.set((index << 1) + 1, isBlackTurn);
 	if (act.oppCount == 0)
 		return state;
-	for (; i < act.teamCount + act.oppCount; ++i, index = MOVE_TABLE[index][act.act.direction]) {
-		if (index == -1)
-			return state;
-	}
-	if (index == -1)
+	for (; i < act.teamCount + act.oppCount; ++i, index = MOVE_TABLE[index][act.act.direction]);
+	if (index == -1) {
+		auto scoreI = (isBlackTurn << 0) * 3 + 122;
+		auto max = scoreI + 3;
+		bool val = state[scoreI];
+		bool carry = val & 1;
+		state.set(scoreI, val ^ 1);
+		while (carry && scoreI < max) {
+			val = state[++scoreI];
+			state.set(scoreI, val ^ carry);
+			carry &= val;
+		}
 		return state;
+	}
 	state.set(index << 1, isBlackTurn);
 	state.set((index << 1) + 1, !isBlackTurn);
 	return state;
@@ -385,8 +393,8 @@ bool logic::isValidMove_human(std::bitset<128U> state, action act, bool isBlackT
 	return false;
 }
 
-sf::Vector2u logic::getScoreFromState(std::bitset<128U>& state) {
-	auto whiteLost = 0u, blackLost = 0u;
+sf::Vector2i logic::getScoreFromState(std::bitset<128U>& state) {
+	auto whiteLost = 0, blackLost = 0;
 	for (auto i = 124u, j = 127u; i > 121; --i, --j) {
 		whiteLost <<= 1;
 		blackLost <<= 1;

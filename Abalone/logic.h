@@ -217,7 +217,7 @@ public:
 	}
 	
 	static bool isValidMove_human(std::bitset<128U> state, action act, bool isBlackTurn);
-	static sf::Vector2u getScoreFromState(std::bitset<128U>& state);
+	static sf::Vector2i getScoreFromState(std::bitset<128U>& state);
 
 	static inline bool isValidMove_ai(std::bitset<128U> & state, weightedAction & act, bool isBlackTurn) {
 		return act.act.count == 1 ? isValidInlineMove(state, act, isBlackTurn) : isValidSideMove(state, act, isBlackTurn);
