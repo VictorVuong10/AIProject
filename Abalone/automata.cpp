@@ -43,6 +43,7 @@ logic::weightedActionState automata::alphaBeta(std::bitset<128U>& state, bool is
 		std::cout << "Depth: " << depth << std::endl;
 		std::cout << "Time used: " << lastLayerUsed << std::endl;
 		std::cout << "Searched state: " << counter << std::endl;
+		std::cout << "bestV: " << bestV << std::endl;
 		std::cout << "Best Action: " << best.act.act.count << " "<< best.act.act.direction << " " << best.act.act.index << std::endl;
 
 		++depth;
@@ -219,14 +220,14 @@ int automata::advanceHeuristic(std::bitset<128U>& state, bool isBlack)
 		scoreMean = scores.x - scores.y;
 	}
 	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
-	auto midMean = 0u;
-	auto spyMean = 0u;
-	auto hexMean = 0u;
+	int midMean = 0;
+	int spyMean = 0;
+	int hexMean = 0;
 	for (auto i = isBlack << 0, j = isBlack ^ 1; i < 122; i += 2, j += 2) {
 		if (state[i]) {
 			midMean += MIDDLE_H[i >> 1];
-			auto diff = 0u;
-			auto same = 0u;
+			int diff = 0;
+			int same = 0;
 			for (auto k = 0u; k < 6; ++k) {
 				auto adj = logic::MOVE_TABLE[i >> 1][k];
 				if (adj == -1) {
@@ -258,29 +259,57 @@ int automata::advanceHeuristic(std::bitset<128U>& state, bool isBlack)
 int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 {
 	auto scores = logic::getScoreFromState(state);
-	int scoreMean = isBlack ? static_cast<int>(scores.y) - static_cast<int>(scores.x) 
-		: static_cast<int>(scores.x) - static_cast<int>(scores.y);
+	int scoreMean = 0;
+	if (isBlack) {
+		if (scores.x == 6) {
+			return INT_MIN;
+		}
+		if (scores.y == 6) {
+			return INT_MAX;
+		}
+		scoreMean = (int)pow(scores.y, 2) * 40 - (int)pow(scores.x, 2) * 50;
+	}
+	else {
+		if (scores.x == 6) {
+			return INT_MAX;
+		}
+		if (scores.y == 6) {
+			return INT_MIN;
+		}
+		scoreMean = (int)pow(scores.x, 2) * 40 - (int)pow(scores.y, 2) * 50 ;
+	}
 	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
-	auto midMean = 0u;
-	auto hexMean = 0u;
+	int midMean = 0;
+	int spyMean = 0;
+	int hexMean = 0;
 	for (auto i = isBlack << 0, j = isBlack ^ 1; i < 122; i += 2, j += 2) {
 		if (state[i]) {
 			midMean += MIDDLE_H[i >> 1] << 1;
-			auto diff = 0u;
-			auto same = 0u;
+			int diff = 0;
+			int same = 0;
 			for (auto k = 0u; k < 6; ++k) {
 				auto adj = logic::MOVE_TABLE[i >> 1][k];
-				if (adj == -1 || !state[(adj << 1) + (isBlack << 0)]) {
-					goto h_end_if;
+				if (adj == -1) {
+					break;
 				}
+				if (state[(adj << 1) + (isBlack << 0)]) {
+					++same;
+				}
+				if (state[(adj << 1) + (isBlack ^ 1)]) {
+					++diff;
+				}
+			}
+			if (diff > 5) {
+				++spyMean;
+			}
+			if (same == 6) {
 				++hexMean;
 			}
 
 		}
-	h_end_if:
 		if (state[j]) {
 			midMean -= MIDDLE_H[j >> 1];
 		}
 	}
-	return 5 * midMean + 2 * hexMean + 200 * scoreMean;
+	return midMean + spyMean + hexMean + scoreMean;
 }
