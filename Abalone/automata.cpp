@@ -26,7 +26,7 @@ logic::weightedActionState automata::getBestMove(std::bitset<128U>& state, bool 
 
 logic::weightedActionState automata::alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int & moveLeft, int& timeLeft)
 {	
-	auto depth = 1u;
+	auto depth = 2u;
 	int miliSec = clock.getElapsedTime().asMilliseconds();
 	int lastLayerUsed = 0;
 	logic::weightedActionState best;
