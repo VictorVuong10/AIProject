@@ -49,7 +49,7 @@ logic::weightedActionState automata::alphaBeta(std::bitset<128U>& state, bool is
 		std::cout << "Best Action: " << best.act.act.count << " "<< best.act.act.direction << " " << best.act.act.index << std::endl;
 
 		++depth;
-	} while (depth < moveLeft && timeLeft- miliSec > lastLayerUsed * 7);
+	} while (depth < moveLeft && timeLeft- miliSec > (lastLayerUsed << 3));
 	return best;
 }
 
@@ -257,7 +257,7 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 		if (scores.y == 6) {
 			return INT_MAX;
 		}
-		scoreMean = scores.y * 100 - scores.x * 200;
+		scoreMean = scores.y * 100 - scores.x * 150;
 	}
 	else {
 		if (scores.x == 6) {
@@ -266,7 +266,7 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 		if (scores.y == 6) {
 			return INT_MIN;
 		}
-		scoreMean = scores.x * 100 - scores.y * 200;
+		scoreMean = scores.x * 100 - scores.y * 150;
 	}
 	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
 	int thisMid = 0;
@@ -284,7 +284,7 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 				if (adj == -1) {
 					break;
 				}
-				if (state[(adj << 1) + (isBlack << 0)]) {
+				if (state[(adj << 1) + (int)isBlack]) {
 					++same;
 					++adjacency;
 				}

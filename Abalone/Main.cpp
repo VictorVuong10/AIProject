@@ -31,6 +31,57 @@ int main() {
 	std::cin >> dummy;*/
 	return 0;
 }
+//
+//struct _2b{
+//	union {
+//		struct {
+//			unsigned long long _2;
+//			unsigned long long _1;
+//			
+//		};
+//	};
+//	/*inline bool operator[](const unsigned int & i) {
+//		return i < 64 ? ((_1 >> i) & 1) : ((_2 >> (i & 63)) & 1);
+//	}*/
+//	inline bool operator[](const unsigned int & i) {
+//		if(i < 64)
+//			return _1 >> i & 1;
+//		return _2 >> (i & 63) & 1;
+//	}
+//};
+//
+//int main() {
+//	sf::Clock timer;
+//	std::bitset<128U> bs{"00000001010010100101011010100001010010100000000000000000000000000000000000000000000000000000001010000101001010100101011010000101"};
+//	_2b bits;
+//	bits._1 = 0b0000000000000000000000000000001010000101001010100101011010000101;
+//	bits._2 = 0b0000000101001010010101101010000101001010000000000000000000000000;
+//
+//	for (int i = 0; i < 128; ++i) {
+//		if (bits[i] != bs[i]) {
+//			std::cout << "something wrong with struct" << std::endl;
+//		}
+//	}
+//
+//
+//	timer.restart();
+//	for (int i = 0; i < 100000; ++i) {
+//		if (66 < 64)
+//			bits._1 >> 66 & 1;
+//		bits._2 >> (66 & 63) & 1;
+//	}
+//	std::cout << timer.getElapsedTime().asMicroseconds() << std::endl;
+//
+//	timer.restart();
+//	for (int i = 0; i < 100000; ++i) {
+//		bool b = bs[66];
+//	}
+//	std::cout << timer.getElapsedTime().asMicroseconds() << std::endl;
+//
+//	int j = 0;
+//	std::cin >> j;
+//	return 0;
+//}
 
 
 //void test(std::bitset<128U> state, bool isBlackTurn) {
