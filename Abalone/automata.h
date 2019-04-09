@@ -57,7 +57,8 @@ private:
 	sf::Clock clock;
 	heuristic h;
 	logic::weightedActionState alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int& moveLeft, int& timeLeft);
-	maxTopReturn maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
+	maxTopReturn maxTop(std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>>& actionStates,
+		std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
 	int maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
 	int minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
 	bool terminateTest(std::bitset<128U>& state, unsigned int depth, unsigned int moveLeft);

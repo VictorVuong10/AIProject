@@ -20,20 +20,21 @@ logic::weightedActionState automata::getBestMove(std::bitset<128U>& state, bool 
 	counter = 0;
 	if (moveLeft == 0) moveLeft = 4;
 	if (timeLeft == 0 || timeLeft > 100) timeLeft = 5;
+	timeLeft *= 1000;
 	return alphaBeta(state, isBlack, moveLeft, timeLeft);
 }
 
 logic::weightedActionState automata::alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int & moveLeft, int& timeLeft)
 {	
-	timeLeft *= 1000;
 	auto depth = 1u;
 	int miliSec = clock.getElapsedTime().asMilliseconds();
 	int lastLayerUsed = 0;
 	logic::weightedActionState best;
 	int bestV = INT_MIN;
+	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	do {
 		returned = false;
-		auto r = maxTop(state, isBlack, depth, moveLeft, timeLeft, INT_MIN, INT_MAX);
+		auto r = maxTop(actionStates, state, isBlack, depth, moveLeft, timeLeft, INT_MIN, INT_MAX);
 		if (r.completed) {
 			best = r.bestAs;
 			bestV = r.bestV;
@@ -52,87 +53,76 @@ logic::weightedActionState automata::alphaBeta(std::bitset<128U>& state, bool is
 	return best;
 }
 
-automata::maxTopReturn automata::maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth,
-	unsigned int moveLeft, int& timeLeft, int alpha, int beta)
+automata::maxTopReturn automata::maxTop(std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>>& actionStates,
+	std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int& timeLeft, int alpha, int beta)
 {
-	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MIN;
-	bool completed = false;
 	logic::weightedActionState bestAs;
-
-	/*unsigned short threadCount = 4;
-	std::vector<std::thread> threadPool;
-	size_t stateIndex = 0;
-
-	for (auto i = 0; i < threadCount; ++i) {
-		threadPool.emplace_back([this, &stateIndex, &alpha, &beta, &actionStates, &bestV, &bestAs, isBlack, depth, moveLeft]() {
-			while (!returned) {
-				std::pair < logic::action, std::bitset<128>> onePair;
-				{
-					if (stateIndex >= actionStates.size()) {
-						cv.notify_all();
-						returned = true;
-						std::cout << "depth complete" << std::endl;
-						return;
-					}
-					else {
-						std::unique_lock<std::mutex>lock{ mtQ };
-						onePair = actionStates[stateIndex++];
-					}
-				}
-				int curV = minValue(onePair.second, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
-				if (returned)
-					return;
-				{
-					std::unique_lock<std::mutex> lock{ mtVal };
-					if (curV > bestV) {
-						bestV = curV;
-						bestAs = onePair;
-					}
-					alpha = std::max(alpha, bestV);
-				}
-			}
-		});
-	}
-	std::unique_lock<std::mutex> blockLck{ blocker };
-	cv.wait_for(blockLck, std::chrono::milliseconds{ timeLeft - clock.getElapsedTime().asMilliseconds() });
-	std::cout << "returned" << std::endl;
-	for (auto& t : threadPool) {
-		t.detach();
-	}
-	return { bestAs, bestV };*/	
 	auto iter = actionStates.begin();
+	int threadRemain = threadNumber;
+	int completedBranch = 0;
 	for (auto i = 0u; iter != actionStates.end(); ++i, ++iter) {
-		auto actualTime = timeLeft - clock.getElapsedTime().asMilliseconds();
-		auto curState = *iter;
-		threadPool.schedule([this, curState, &bestV, &bestAs, isBlack, depth, moveLeft, &alpha, beta, &actionStates]() {
-			if (returned)
-				return;
-			auto oneState = curState.state;
+		//take a thread
+		--threadRemain;
+		threadPool.schedule([this, iter, &bestV, &bestAs, &completedBranch, &threadRemain ,isBlack, depth, moveLeft, &alpha, beta]() {
+			std::bitset<128U> oneState;
+			{
+				std::unique_lock<std::mutex> lck{ mtQ };
+				if (returned) {
+					return;
+				}
+				oneState = iter->state;
+			}
 			int curV = minValue(oneState, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
+			std::unique_lock<std::mutex> lck{ mtQ };
 			if (returned)
 				return;
-			std::unique_lock<std::mutex> lck{ mtQ };
+			//// && curState.act.act.count == 1 && curState.act.act.direction == 5 && curState.act.act.index == 55
+			//if (depth == 4) {
+			//	std::cout << "innerC: " << completedBranch << std::endl;
+			//	std::cout << "+++++++++++count " << curState.act.act.count << " index: "<< curState.act.act.index << " direction: " << curState.act.act.direction << std::endl;
+			//	std::cout << "curV: " << curV << std::endl << std::endl;
+			//}
 			if (curV > bestV) {
 				bestV = curV;
-				bestAs = curState;
+				bestAs = *iter;
 			}
 			alpha = std::max(alpha, bestV);
 			
-			cv.notify_all();
+			
+			//return a thread
+			++threadRemain;
+			//increase completed branch
+			++completedBranch;
+			//notify cv thread made change.
+			cv.notify_one();
 		});
-		if (i > threadNumber - 1) {
-			std::unique_lock<std::mutex> blockLck{ blocker };
-			if (cv.wait_for(blockLck, std::chrono::milliseconds{ actualTime }) == std::cv_status::timeout) {
-				std::cout << "<timeout>" << std::endl;
-				goto returning;
-			}
+		//wait for there is remaining thread, if timeout then set cutoff variable then return.
+		std::unique_lock<std::mutex> blockLck{ blocker };
+		if (!cv.wait_for(blockLck, std::chrono::milliseconds{ timeLeft - clock.getElapsedTime().asMilliseconds() }, [&threadRemain] {return threadRemain > 0; })) {
+			std::unique_lock<std::mutex> lck{ mtQ };
+			std::cout << "<timeout>" << std::endl;
+			returned = true;
+			return { bestAs, bestV, false };
 		}
+	}
+	//wait for all branch are completed, if timeout then set cutoff variable then return.
+	std::unique_lock<std::mutex> blockLck{ blocker };
+	if (!cv.wait_for(blockLck, std::chrono::milliseconds{ timeLeft - clock.getElapsedTime().asMilliseconds() },
+		[&completedBranch, &actionStates] {return completedBranch == actionStates.size(); })) {
+		std::unique_lock<std::mutex> lck{ mtQ };
+		std::cout << "<timeout>" << std::endl;
+		returned = true;
+		return { bestAs, bestV, false };
 	}
 	
 	
+	std::unique_lock<std::mutex> lck{ mtQ };
+	std::cout << "<completed>" << std::endl;
+	//std::cout << "----------------inner Counter:" << completedBranch << " actionLen: "<< actionStates.size() << std::endl;
+	returned = true;
 
-	//threading
+	//single thread
 	/*for (auto as : actionStates) {
 		int curV = minValue(as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
 		if (curV > bestV) {
@@ -141,11 +131,7 @@ automata::maxTopReturn automata::maxTop(std::bitset<128U>& state, bool isBlack, 
 		}
 		alpha = std::max(alpha , bestV);
 	}*/
-	std::cout << "<completed>" << std::endl;
-	completed = true;
-returning:
-	returned = true;
-	return { bestAs, bestV, completed };
+	return { bestAs, bestV, true };
 }
 
 int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth,
@@ -179,9 +165,6 @@ int automata::minValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 	int bestV = INT_MAX;
 	for (auto as : actionStates) {
 		bestV = std::min(bestV, maxValue(as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
-		if (as.state == std::bitset < 128U > {"00100000000000000101000010100101010010101000100100001010000000100000010000000010100000010100001000000101011010000001000000000000"}) {
-			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << bestV << std::endl;
-		}
 		if (bestV <= alpha)
 			return bestV;
 		beta = std::min(beta, bestV);
@@ -321,5 +304,5 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 			thatMid += MIDDLE_H[j >> 1];
 		}
 	}
-	return thisMid * 1.1 - thatMid + (adjacency >> 2) + spyMean + hexMean + scoreMean;
+	return (int)(thisMid * 1.1) - thatMid + (adjacency >> 2) + spyMean + hexMean + scoreMean;
 }

@@ -76,13 +76,16 @@ int main() {
 //}
 //
 //int main() {
-//	for (int i = 1; i <= 16; ++i) {
+//	std::bitset<128U> asd{ "00000000000000000101000010100101010010101000010100001010000000100000000000000010100000010100001010000101011010000001010000000000" };
+//	/*for (int i = 1; i <= 16; ++i) {
 //		std::string path = "../Test/Test" + std::to_string(i) + ".input";
 //		bool isBlackTurn = true;
 //		auto state = testcaseManager::notationToState(path, &isBlackTurn);
 //		std::cout << testcaseManager::printState(state[0]) << std::endl;
 //		test(state[0], isBlackTurn);
-//	}
+//	}*/
+//	test(asd, false);
+//
 //	int j;
 //	std::cin >> j;
 //	return 0;
