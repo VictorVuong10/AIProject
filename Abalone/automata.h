@@ -12,10 +12,16 @@ class automata
 public:
 	typedef std::function<int(std::bitset<128U>&, bool)> heuristic;
 
+	struct maxTopReturn {
+		logic::weightedActionState bestAs;
+		int bestV;
+		bool completed;
+	};
+
 	static const std::bitset<128U> MASKS_BLACK;
 	static const std::bitset<128U> MASKS_WHITE;
 
-	static constexpr unsigned int MIDDLE_H[61] = {
+	static constexpr int MIDDLE_H[61] = {
 		   1, 1, 1, 1, 1,
 		   1, 2, 2, 2, 2, 1,
 		   1, 2, 3, 3, 3, 2, 1,
@@ -51,9 +57,9 @@ private:
 	sf::Clock clock;
 	heuristic h;
 	logic::weightedActionState alphaBeta(std::bitset<128U>& state, bool isBlack, unsigned int& moveLeft, int& timeLeft);
-	std::pair<logic::weightedActionState, int> maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
+	maxTopReturn maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta);
 	int maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
 	int minValue(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta);
-	bool terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft);
+	bool terminateTest(std::bitset<128U>& state, unsigned int depth, unsigned int moveLeft);
 
 };

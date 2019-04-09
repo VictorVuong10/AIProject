@@ -14,6 +14,7 @@ automata::~automata()
 
 logic::weightedActionState automata::getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft)
 {
+	std::cout << state.to_string() << std::endl;
 	threadPool.wait();
 	clock.restart();
 	counter = 0;
@@ -33,9 +34,9 @@ logic::weightedActionState automata::alphaBeta(std::bitset<128U>& state, bool is
 	do {
 		returned = false;
 		auto r = maxTop(state, isBlack, depth, moveLeft, timeLeft, INT_MIN, INT_MAX);
-		if (r.second >= bestV) {
-			best = r.first;
-			bestV = r.second;
+		if (r.completed) {
+			best = r.bestAs;
+			bestV = r.bestV;
 		}
 		lastLayerUsed = clock.getElapsedTime().asMilliseconds() - miliSec;
 		miliSec += lastLayerUsed;
@@ -51,11 +52,12 @@ logic::weightedActionState automata::alphaBeta(std::bitset<128U>& state, bool is
 	return best;
 }
 
-std::pair<logic::weightedActionState, int> automata::maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth,
+automata::maxTopReturn automata::maxTop(std::bitset<128U>& state, bool isBlack, unsigned int depth,
 	unsigned int moveLeft, int& timeLeft, int alpha, int beta)
 {
 	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MIN;
+	bool completed = false;
 	logic::weightedActionState bestAs;
 
 	/*unsigned short threadCount = 4;
@@ -98,12 +100,12 @@ std::pair<logic::weightedActionState, int> automata::maxTop(std::bitset<128U>& s
 	for (auto& t : threadPool) {
 		t.detach();
 	}
-	return { bestAs, bestV };*/
+	return { bestAs, bestV };*/	
 	auto iter = actionStates.begin();
 	for (auto i = 0u; iter != actionStates.end(); ++i, ++iter) {
 		auto actualTime = timeLeft - clock.getElapsedTime().asMilliseconds();
 		auto curState = *iter;
-		threadPool.schedule([this, curState, &bestV, &bestAs, isBlack, depth, moveLeft, &alpha, beta]() {
+		threadPool.schedule([this, curState, &bestV, &bestAs, isBlack, depth, moveLeft, &alpha, beta, &actionStates]() {
 			if (returned)
 				return;
 			auto oneState = curState.state;
@@ -132,7 +134,7 @@ std::pair<logic::weightedActionState, int> automata::maxTop(std::bitset<128U>& s
 
 	//threading
 	/*for (auto as : actionStates) {
-		int curV = minValue(as.second, !isBlack, depth - 1, moveLeft - 1, timeLeft, alpha, beta);
+		int curV = minValue(as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
 		if (curV > bestV) {
 			bestV = curV;
 			bestAs = as;
@@ -140,9 +142,10 @@ std::pair<logic::weightedActionState, int> automata::maxTop(std::bitset<128U>& s
 		alpha = std::max(alpha , bestV);
 	}*/
 	std::cout << "<completed>" << std::endl;
+	completed = true;
 returning:
 	returned = true;
-	return { bestAs, bestV };
+	return { bestAs, bestV, completed };
 }
 
 int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int depth,
@@ -150,7 +153,7 @@ int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 {
 	if (returned)
 		return INT_MAX;
-	if (terminateTest(state, isBlack, depth, moveLeft)) {
+	if (terminateTest(state, depth, moveLeft)) {
 		return h(state, isBlack);
 	}
 	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
@@ -158,7 +161,7 @@ int automata::maxValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 	for (auto as : actionStates) {
 		bestV = std::max(bestV, minValue(as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
 		if (bestV >= beta)
-			return INT_MAX;
+			return bestV;
 		alpha = std::max(alpha, bestV);
 	}
 	return bestV;
@@ -169,21 +172,25 @@ int automata::minValue(std::bitset<128U>& state, bool isBlack, unsigned int dept
 {
 	if (returned)
 		return INT_MIN;
-	if (terminateTest(state, !isBlack, depth, moveLeft)) {
+	if (terminateTest(state, depth, moveLeft)) {
 		return h(state, !isBlack);
 	}
 	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MAX;
 	for (auto as : actionStates) {
 		bestV = std::min(bestV, maxValue(as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
+		if (as.state == std::bitset < 128U > {"00100000000000000101000010100101010010101000100100001010000000100000010000000010100000010100001000000101011010000001000000000000"}) {
+			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << bestV << std::endl;
+		}
 		if (bestV <= alpha)
-			return INT_MIN;
+			return bestV;
 		beta = std::min(beta, bestV);
 	}
+	
 	return bestV;
 }
 
-bool automata::terminateTest(std::bitset<128U>& state, bool isBlack, unsigned int depth, unsigned int moveLeft)
+bool automata::terminateTest(std::bitset<128U>& state, unsigned int depth, unsigned int moveLeft)
 {
 	++counter;
 	//depth ran out
@@ -267,7 +274,7 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 		if (scores.y == 6) {
 			return INT_MAX;
 		}
-		scoreMean = (int)pow(scores.y, 2) * 40 - (int)pow(scores.x, 2) * 50;
+		scoreMean = scores.y * 100 - scores.x * 200;
 	}
 	else {
 		if (scores.x == 6) {
@@ -276,15 +283,17 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 		if (scores.y == 6) {
 			return INT_MIN;
 		}
-		scoreMean = (int)pow(scores.x, 2) * 40 - (int)pow(scores.y, 2) * 50 ;
+		scoreMean = scores.x * 100 - scores.y * 200;
 	}
 	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
-	int midMean = 0;
+	int thisMid = 0;
+	int thatMid = 0;
 	int spyMean = 0;
 	int hexMean = 0;
+	int adjacency = 0;
 	for (auto i = isBlack << 0, j = isBlack ^ 1; i < 122; i += 2, j += 2) {
 		if (state[i]) {
-			midMean += MIDDLE_H[i >> 1] << 1;
+			thisMid += MIDDLE_H[i >> 1];
 			int diff = 0;
 			int same = 0;
 			for (auto k = 0u; k < 6; ++k) {
@@ -294,6 +303,7 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 				}
 				if (state[(adj << 1) + (isBlack << 0)]) {
 					++same;
+					++adjacency;
 				}
 				if (state[(adj << 1) + (isBlack ^ 1)]) {
 					++diff;
@@ -308,8 +318,8 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 
 		}
 		if (state[j]) {
-			midMean -= MIDDLE_H[j >> 1];
+			thatMid += MIDDLE_H[j >> 1];
 		}
 	}
-	return midMean + spyMean + hexMean + scoreMean;
+	return thisMid * 1.1 - thatMid + (adjacency >> 2) + spyMean + hexMean + scoreMean;
 }

@@ -53,14 +53,14 @@ const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, B
 
 game::game() : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }, player1IsBlack{true},
-player1{ new automata{automata::basicHeuristic} }, player2{ new automata{automata::advanceHeuristic} }
+player1{ new automata{automata::basicHeuristic} }, player2{ new automata{automata::basicHeuristic} }
 {
 	initAllEle();
 }
 
 game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}, player1IsBlack{ true },
-	player1{ new automata{automata::basicHeuristic} }, player2{ new automata{automata::advanceHeuristic} }
+	player1{ new automata{automata::basicHeuristic} }, player2{ new automata{automata::basicHeuristic} }
 {
 	initAllEle();
 }
@@ -441,7 +441,7 @@ void game::startGame() {
 	turnTimer.restart();
 	std::cout << "Game START." << std::endl << std::endl;
 	if (!player1IsHuman || !player2IsHuman) {
-		if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && !player2IsHuman))) {
+		/*if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && !player2IsHuman))) {
 			auto validMoves = logic::getAllValidMove(state, isBlackTurn);
 			std::random_device rand_dev;
 			std::mt19937 generator(rand_dev());
@@ -453,7 +453,8 @@ void game::startGame() {
 		}
 		else {
 			automataMove();
-		}
+		}*/
+		automataMove();
 	}
 }
 
