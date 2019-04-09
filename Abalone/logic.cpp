@@ -210,13 +210,13 @@ std::vector<std::pair<logic::action, std::bitset<128U>>> logic::getAllValidMove(
 	return action_state;
 }
 
-std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> logic::getAllValidMoveOrdered(std::bitset<128U>& state, bool isBlackTurn) {
+std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> logic::getAllValidMoveOrdered(bitState& state, bool isBlackTurn) {
 	
 	std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> actionStates;
 	int counter = 0;
 	//count 1-3, index 0-60, direction 0-5
 	for (auto bitindex = (int)isBlackTurn; bitindex < 122; bitindex += 2) {
-		if (state[bitindex]) {
+		if ((bitindex < 64 ? (bool)(state._1 >> bitindex & 1) : (bool)(state._2 >> bitindex & 63 & 1))) {
 			for (int direction = 0; direction < 6; ++direction) {
 				for (int count = 1; count < 4; ++count) {
 					weightedAction act{ {count, bitindex >> 1, direction}, 0, 0, -1 };
@@ -231,68 +231,176 @@ std::multiset<logic::weightedActionState, std::greater<logic::weightedActionStat
 	return actionStates;
 }
 
-bool logic::isValidSideMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn)
+bool logic::isValidSideMove(bitState& state, weightedAction & act, bool isBlackTurn)
 {
 	act.teamCount = act.act.count;
 	//check 1: path is blocked
 	int next = MOVE_TABLE[act.act.index][act.act.direction];
-	if (next == -1 || state[next << 1] || state[(next << 1) + 1] ) {
+	if (next == -1) {
 		return false;
 	}
+
+	int bitIndex = next << 1;
+	if (bitIndex < 64) {
+		if (state._1 >> bitIndex & 2)
+			return false;
+	}
+	else {
+		if (state._2 >> bitIndex & 63 & 2)
+			return false;
+	}
+
 	//check 2: aligning direction
 	//assume its aligning on counter clockwise -1 direction
-	int alignDrr = (act.act.direction + 5) % 6;
+	int alignDrr = act.act.direction - 1;
+	if (alignDrr < 0) 
+		alignDrr = 5;
 	int alignNext = MOVE_TABLE[act.act.index][alignDrr];
 
 	//if check 2 is outbound or blocked, other direction is blocked anyway
-	if (alignNext == -1 || state[(alignNext << 1) + (int)!isBlackTurn]) {
+	/*if (alignNext == -1 || state[(alignNext << 1) + (int)!isBlackTurn]) {
+		return false;
+	}*/
+	if (alignNext == -1) {
 		return false;
 	}
 
+	bitIndex = (alignNext << 1) + (int)!isBlackTurn;
+	if (bitIndex < 64) {
+		if (state._1 >> bitIndex & 1)
+			return false;
+	}
+	else {
+		if (state._2 >> bitIndex & 63 & 1)
+			return false;
+	}
+
+	bitIndex = (alignNext << 1) + (int)isBlackTurn;
+	bool _2Bool = bitIndex < 64 ? (bool)(state._1 >> bitIndex & 1) : (bool)(state._2 >> bitIndex & 63 & 1);
+
 	//found same color 2nd marble, confirm aligning direction
-	if (state[(alignNext << 1) + (int)isBlackTurn]) {
+	//if (state[(alignNext << 1) + (int)isBlackTurn]) {
+	if (_2Bool) {
 		next = MOVE_TABLE[alignNext][act.act.direction];
 		//2nd marble's path is blocked or outbound
-		if (next == -1 || state[next << 1] || state[(next << 1) + 1]) {
+		/*if (next == -1 || state[next << 1] || state[(next << 1) + 1]) {
+			return false;
+		}*/
+		if (next == -1) {
 			return false;
 		}
+		bitIndex = next << 1;
+		if (bitIndex < 64) {
+			if (state._1 >> bitIndex & 2)
+				return false;
+		}
+		else {
+			if (state._2 >> bitIndex & 63 & 2)
+				return false;
+		}
+
 		//addtion check for count 3
 		if (act.act.count == 3) {
 			alignNext = MOVE_TABLE[alignNext][alignDrr];
 			//expect 3rd, but not found
-			if (alignNext == -1 || !state[(alignNext << 1) + (int)isBlackTurn]) {
+			/*if (alignNext == -1 || !state[(alignNext << 1) + (int)isBlackTurn]) {
+				return false;
+			}*/
+			if (alignNext == -1) {
 				return false;
 			}
+			bitIndex = (alignNext << 1) + (int)isBlackTurn;
+			if (bitIndex < 64) {
+				if (!(state._1 >> bitIndex & 1))
+					return false;
+			}
+			else {
+				if (!(state._2 >> bitIndex & 63 & 1))
+					return false;
+			}
+
 			next = MOVE_TABLE[alignNext][act.act.direction];
 			//3rd marble's path is blocked or outbound
-			if (next == -1 || state[next << 1] || state[(next << 1) + 1]) {
+			/*if (next == -1 || state[next << 1] || state[(next << 1) + 1]) {
 				return false;
+			}*/
+			if (next == -1) {
+				return false;
+			}
+			bitIndex = next << 1;
+			if (bitIndex < 64) {
+				if (state._1 >> bitIndex & 2)
+					return false;
+			}
+			else {
+				if (state._2 >> bitIndex & 63 & 2)
+					return false;
 			}
 		}
 	}
 	//drr 2
 	else {
 		//assume its aligning on counter clockwise -2 direction
-		alignDrr = (act.act.direction + 4) % 6;
+		alignDrr = alignDrr - 1;
+		if (alignDrr < 0) 
+			alignDrr = 5;
 
 		//2nd marble's path is already clear, so check 2nd marble itself.
-		alignNext = MOVE_TABLE[alignNext][(act.act.direction + 3) % 6];
+		alignNext = MOVE_TABLE[alignNext][COUNTER_DIRECTION[act.act.direction]];
 		//2nd marble is outbound or is not same color
-		if (alignNext == -1 || !state[(alignNext << 1) + (int)isBlackTurn]) {
+		/*if (alignNext == -1 || !state[(alignNext << 1) + (int)isBlackTurn]) {
+			return false;
+		}*/
+		if (alignNext == -1) {
 			return false;
 		}
+		bitIndex = (alignNext << 1) + (int)isBlackTurn;
+		if (bitIndex < 64) {
+			if (!(state._1 >> bitIndex & 1))
+				return false;
+		}
+		else {
+			if (!(state._2 >> bitIndex & 63 & 1))
+				return false;
+		}
+
 		//addtion check for count 3
 		if (act.act.count == 3) {
 			alignNext = MOVE_TABLE[alignNext][alignDrr];
 			//expect 3rd, but not found
-			if (alignNext == -1 || !state[(alignNext << 1) + (int)isBlackTurn]) {
+			/*if (alignNext == -1 || !state[(alignNext << 1) + (int)isBlackTurn]) {
 				return false;
+			}*/
+			if (alignNext == -1) {
+				return false;
+			}
+			bitIndex = (alignNext << 1) + (int)isBlackTurn;
+			if (bitIndex < 64) {
+				if (state._1 >> bitIndex & 2)
+					return false;
+			}
+			else {
+				if (state._2 >> bitIndex & 63 & 2)
+					return false;
 			}
 			next = MOVE_TABLE[alignNext][act.act.direction];
 			//3rd marble's path is blocked or outbound
-			if (next == -1 || state[next << 1] || state[(next << 1) + 1]) {
+			/*if (next == -1 || state[next << 1] || state[(next << 1) + 1]) {
+				return false;
+			}*/
+			if (next == -1) {
 				return false;
 			}
+			bitIndex = next << 1;
+			if (bitIndex < 64) {
+				if (state._1 >> bitIndex & 2)
+					return false;
+			}
+			else {
+				if (state._2 >> bitIndex & 63 & 2)
+					return false;
+			}
+
 		}
 
 	}
@@ -301,7 +409,7 @@ bool logic::isValidSideMove(std::bitset<128U>& state, weightedAction & act, bool
 	return true;
 }
 
-bool logic::isValidInlineMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn)
+bool logic::isValidInlineMove(bitState& state, weightedAction & act, bool isBlackTurn)
 {
 	act.alignDrr = act.act.direction;
 	bool countingTeam = true;
@@ -316,7 +424,9 @@ bool logic::isValidInlineMove(std::bitset<128U>& state, weightedAction & act, bo
 		}
 
 		//next is team
-		if (state[(next << 1) + (int)isBlackTurn]) {
+		//if (state[(next << 1) + (int)isBlackTurn]) {
+		int bitIndex = (next << 1) + (int)isBlackTurn;
+		if((bitIndex < 64 ? (bool)(state._1 >> bitIndex & 1) : (bool)(state._2 >> bitIndex & 63 & 1))){
 			//blocked
 			if (!countingTeam || ++teamCount > 3) {
 				return false;
@@ -325,7 +435,9 @@ bool logic::isValidInlineMove(std::bitset<128U>& state, weightedAction & act, bo
 		//next is not team
 		else {
 			//next is opponent
-			if (state[(next << 1) + (int)!isBlackTurn]) {
+			//if (state[(next << 1) + (int)!isBlackTurn]) {
+			bitIndex = (next << 1) + (int)!isBlackTurn;
+			if((bitIndex < 64 ? (bool)(state._1 >> bitIndex & 1) : (bool)(state._2 >> bitIndex & 63 & 1))){
 				if (countingTeam) {
 					countingTeam = !countingTeam;
 				}
@@ -345,7 +457,7 @@ bool logic::isValidInlineMove(std::bitset<128U>& state, weightedAction & act, bo
 	return false;
 }
 
-std::bitset<128U>& logic::inlineMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn) {
+std::bitset<128U>& logic::inlineMove(bitState& state, weightedAction & act, bool isBlackTurn) {
 	int index = act.act.index;
 	int i = 0;
 	state.set(index << 1, 0);
@@ -374,7 +486,7 @@ std::bitset<128U>& logic::inlineMove(std::bitset<128U>& state, weightedAction & 
 	return state;
 }
 
-std::bitset<128U>& logic::sideMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn) {
+std::bitset<128U>& logic::sideMove(bitState& state, weightedAction & act, bool isBlackTurn) {
 	int index = act.act.index;
 	int next = MOVE_TABLE[index][act.act.direction];
 	for (int i = 0; i < act.teamCount; ++i) {
@@ -386,11 +498,6 @@ std::bitset<128U>& logic::sideMove(std::bitset<128U>& state, weightedAction & ac
 		next = MOVE_TABLE[index][act.act.direction];
 	}
 	return state;
-}
-
-bool logic::isValidMove_human(std::bitset<128U> state, action act, bool isBlackTurn)
-{
-	return false;
 }
 
 sf::Vector2i logic::getScoreFromState(std::bitset<128U>& state) {

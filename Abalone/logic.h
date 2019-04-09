@@ -15,6 +15,14 @@
 class logic
 {
 public:
+	struct bitState {
+		unsigned long long _2;
+		unsigned long long _1;
+		bitState() = default;
+		bitState(const bitState& bs) :_2{ bs._2 }, _1{ bs._1 }{};
+		bitState(bitState && bs) : _2{ bs._2 }, _1{ bs._1 }{};
+	};
+
 	struct action {
 		int count;
 		int index;
@@ -47,9 +55,9 @@ public:
 
 	struct weightedActionState {
 		weightedAction act;
-		std::bitset<128U> state;
+		bitState state;
 		weightedActionState() = default;
-		weightedActionState(weightedAction act, std::bitset<128U>&& state) :act{ std::move(act) }, state{ std::move(state) }{}
+		weightedActionState(weightedAction act, bitState&& state) :act{ std::move(act) }, state{ std::move(state) }{}
 		bool operator<(const weightedActionState & wsa) const {
 			return act < wsa.act;
 		}
@@ -203,37 +211,40 @@ public:
 		{0, 0}
 	};
 
+	static constexpr int COUNTER_DIRECTION[6] = { 3, 4, 5, 0, 1, 2 };
+
 	logic(const logic &) = delete;
 	void operator=(const logic &) = delete;
 
 	~logic() = default;
 	
+	//old move funcs
 	static std::bitset<128U> move(std::bitset<128U> state, action action, bool isBlackTurn);
 	static std::vector<std::pair<logic::action, std::bitset<128U>>> getAllValidMove(std::bitset<128U>& state, bool isBlackTurn);
-	static std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> getAllValidMoveOrdered(std::bitset<128U>& state, bool isBlackTurn);
+	static std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> getAllValidMoveOrdered(bitState& state, bool isBlackTurn);
 
 	static inline bool isEmpty(int index, std::bitset<128U>& state) {
 		return !state[index << 1] && !state[(index << 1) + 1];
 	}
 	
-	static bool isValidMove_human(std::bitset<128U> state, action act, bool isBlackTurn);
 	static sf::Vector2i getScoreFromState(std::bitset<128U>& state);
 
-	static inline bool isValidMove_ai(std::bitset<128U> & state, weightedAction & act, bool isBlackTurn) {
+	static inline bool isValidMove_ai(bitState & state, weightedAction & act, bool isBlackTurn) {
 		return act.act.count == 1 ? isValidInlineMove(state, act, isBlackTurn) : isValidSideMove(state, act, isBlackTurn);
 	}
-	static bool isValidSideMove(std::bitset<128U> & state, weightedAction & act, bool isBlackTurn);
-	static bool isValidInlineMove(std::bitset<128U> & state, weightedAction & act, bool isBlackTurn);
+	static bool isValidSideMove(bitState & state, weightedAction & act, bool isBlackTurn);
+	static bool isValidInlineMove(bitState & state, weightedAction & act, bool isBlackTurn);
 
-	static inline std::bitset<128U> move_ai(std::bitset<128U> state, weightedAction & act, bool isBlackTurn) {
+	static inline std::bitset<128U> move_ai(bitState state, weightedAction & act, bool isBlackTurn) {
 		return act.act.count == 1 ? inlineMove(state, act, isBlackTurn) : sideMove(state, act, isBlackTurn);
 	}
-	static std::bitset<128U>& inlineMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn);
-	static std::bitset<128U>& sideMove(std::bitset<128U>& state, weightedAction & act, bool isBlackTurn);
+	static std::bitset<128U>& inlineMove(bitState& state, weightedAction & act, bool isBlackTurn);
+	static std::bitset<128U>& sideMove(bitState& state, weightedAction & act, bool isBlackTurn);
 
 private:
 	logic() = default;
 
+	//old move funcs
 	static std::bitset<128U>& sideMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
 	static std::bitset<128U>& inlineMove(std::bitset<128U>& state, action& act, bool isBlackTurn);
 
