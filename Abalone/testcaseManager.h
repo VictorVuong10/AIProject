@@ -29,8 +29,11 @@ public:
 	static void runTestcase(int num);
 	static void runAllTestcasesCompare(int testcaseNum);
 	static void runTestcaseCompare(int num);
-	static void compareWithBoardSet(std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> generated, std::string path);
+	static void compareWithBoardSet(std::multiset<logic::weightedActionState_old, std::greater<logic::weightedActionState_old>> generated, std::string path);
 	static void compareWithBoard(std::vector<std::pair<logic::action, std::bitset<128U>>> generated, std::string path);
+	static void runAllTestcasesCompareNew(int testcaseNum);
+	static void runTestcaseCompareNew(int num);
+	static void compareWithBoardSet(std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>> generated, std::string path);
 	
 private:
 	testcaseManager() = default;

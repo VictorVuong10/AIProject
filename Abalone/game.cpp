@@ -53,7 +53,7 @@ const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, B
 
 game::game() : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }, player1IsBlack{true},
-player1{ new automata{automata::basicHeuristic} }, player2{ new automata{automata::basicHeuristic} }
+player1{ new automata{automata::h1} }, player2{ new automata{automata::h1} }
 {
 	initAllEle();
 }
@@ -592,7 +592,8 @@ void game::automataMove() {
 			ui->asyncAwait<logic::weightedActionState>([&] {
 
 				progress = (gameProgress::AI_SEARCHING | gameProgress::IN_PROGRESS);
-				auto actionState = player2->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
+				auto bitState = logic::b2b(state);
+				auto actionState = player2->getBestMove(bitState, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
 					player1IsBlack ? moveTimeLimitWhite : moveTimeLimitBlack);
 
 				return actionState;
@@ -600,7 +601,7 @@ void game::automataMove() {
 				if (!(gameProgress::AI_SEARCHING & progress))
 					return;
 				progress = gameProgress::IN_PROGRESS;
-				nextState(actionState.state);
+				nextState(logic::b2b(actionState.state));
 				automataMove();
 			});
 		}
@@ -611,7 +612,8 @@ void game::automataMove() {
 			ui->asyncAwait<logic::weightedActionState>([&] {
 
 				progress = (gameProgress::AI_SEARCHING | gameProgress::IN_PROGRESS);
-				auto actionState = player1->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
+				auto bitState = logic::b2b(state);
+				auto actionState = player1->getBestMove(bitState, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
 					player1IsBlack ? moveTimeLimitBlack : moveTimeLimitWhite);
 
 				return actionState;
@@ -619,7 +621,7 @@ void game::automataMove() {
 				if (!(gameProgress::AI_SEARCHING & progress))
 					return;
 				progress = gameProgress::IN_PROGRESS;
-				nextState(actionState.state);
+				nextState(logic::b2b(actionState.state));
 				automataMove();
 			});
 		}
