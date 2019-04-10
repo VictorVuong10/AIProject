@@ -662,7 +662,7 @@ logic::bitState& logic::inlineMove(bitState& state, weightedAction & act, bool i
 		return state;
 	for (; i < act.teamCount + act.oppCount; ++i, index = MOVE_TABLE[index][act.act.direction]);
 	if (index == -1) {
-		auto scoreI = (isBlackTurn) * 3 + 122;
+		auto scoreI = (isBlackTurn) * 3 + 58;
 		//auto max = scoreI + 3;
 		//bool val = state[scoreI];
 		//bool carry = val & 1;

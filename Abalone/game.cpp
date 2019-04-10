@@ -60,7 +60,7 @@ player1{ new automata{automata::h1} }, player2{ new automata{automata::h1} }
 
 game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}, player1IsBlack{ true },
-	player1{ new automata{automata::basicHeuristic} }, player2{ new automata{automata::basicHeuristic} }
+	player1{ new automata{automata::basicHeuristic} }, player2{ new automata{automata::h1} }
 {
 	initAllEle();
 }
@@ -609,19 +609,19 @@ void game::automataMove() {
 	//player 1 move
 	else {
 		if (!player1IsHuman) {
-			ui->asyncAwait<logic::weightedActionState>([&] {
+			ui->asyncAwait<logic::weightedActionState_old>([&] {
 
 				progress = (gameProgress::AI_SEARCHING | gameProgress::IN_PROGRESS);
-				auto bitState = logic::b2b(state);
-				auto actionState = player1->getBestMove(bitState, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
+				//auto bitState = logic::b2b(state);
+				auto actionState = player1->getBestMove(state, isBlackTurn, maxMovesPerPlayer * 2 - movesMade,
 					player1IsBlack ? moveTimeLimitBlack : moveTimeLimitWhite);
 
 				return actionState;
-			}, [&](logic::weightedActionState actionState) {
+			}, [&](logic::weightedActionState_old actionState) {
 				if (!(gameProgress::AI_SEARCHING & progress))
 					return;
 				progress = gameProgress::IN_PROGRESS;
-				nextState(logic::b2b(actionState.state));
+				nextState(actionState.state);
 				automataMove();
 			});
 		}

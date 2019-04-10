@@ -418,8 +418,8 @@ int automata::maxValue(logic::bitState & state, bool isBlack, unsigned int depth
 	if (returned)
 		return INT_MAX;
 	++counter;
-	auto blackLoss = (int)(state._2 >> 122 & 7);
-	auto whiteLoss = (int)(state._2 >> 125 & 7);
+	auto blackLoss = (int)(state._2 >> 58 & 7);
+	auto whiteLoss = (int)(state._2 >> 61 & 7);
 	if (depth < 1 || moveLeft < 1 || whiteLoss > 5 || blackLoss > 5) {
 		return hn(state, isBlack, blackLoss, whiteLoss);
 	}
@@ -439,8 +439,8 @@ int automata::minValue(logic::bitState & state, bool isBlack, unsigned int depth
 	if (returned)
 		return INT_MIN;
 	++counter;
-	auto blackLoss = (int)(state._2 >> 122 & 7);
-	auto whiteLoss = (int)(state._2 >> 125 & 7);
+	auto blackLoss = (int)(state._2 >> 58 & 7);
+	auto whiteLoss = (int)(state._2 >> 61 & 7);
 	if (depth < 1 || moveLeft < 1 || whiteLoss > 5 || blackLoss > 5) {
 		return hn(state, !isBlack, blackLoss, whiteLoss);
 	}
@@ -477,7 +477,6 @@ int automata::h1(logic::bitState & state, bool isBlack, int& blackLost, int& whi
 		}
 		scoreMean = blackLost * 100 - whiteLost * 150;
 	}
-	/*auto extracted = isBlack ? state & MASKS_BLACK : state & MASKS_WHITE;*/
 	int thisMid = 0;
 	int thatMid = 0;
 	int spyMean = 0;

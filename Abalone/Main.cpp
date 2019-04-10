@@ -84,36 +84,36 @@ int main() {
 //}
 
 
-void test(logic::bitState state, std::bitset<128U> bitsetState, bool isBlackTurn) {
-	int counter = 0;
-	auto list = logic::getAllValidMoveOrdered(state, isBlackTurn);
-
-	auto listCorrect = logic::getAllValidMove(bitsetState, isBlackTurn);
-	std::vector<logic::action> listNotIn;
-
-	for (auto actionState : listCorrect) {
-		bool added = false;
-		for (auto i = list.begin(); i != list.end(); ++i) {
-			if (i->act.act == actionState.first) {
-				list.erase(i);
-				added = true;
-				break;
-			}
-		}
-		if(!added)
-			listNotIn.push_back(actionState.first);
-	}
-	std::cout << "EXCEED: " << std::endl;
-	for (auto a : list) {
-		std::cout << a.act.act.count << " " << a.act.act.direction << " " << a.act.act.index << std::endl;
-		std::cout << testcaseManager::printState( std::bitset<128U>(std::bitset<64>(a.state._2).to_string() + std::bitset<64>(a.state._1).to_string())) << std::endl;
-	}
-	std::cout << "NOT IN: " << std::endl;
-	for (auto a : listNotIn) {
-		std::cout << a.count << " " << a.direction << " " << a.index << std::endl;
-	}
-	std::cout << std::endl;
-}
+//void test(logic::bitState state, std::bitset<128U> bitsetState, bool isBlackTurn) {
+//	int counter = 0;
+//	auto list = logic::getAllValidMoveOrdered(state, isBlackTurn);
+//
+//	auto listCorrect = logic::getAllValidMove(bitsetState, isBlackTurn);
+//	std::vector<logic::action> listNotIn;
+//
+//	for (auto actionState : listCorrect) {
+//		bool added = false;
+//		for (auto i = list.begin(); i != list.end(); ++i) {
+//			if (i->act.act == actionState.first) {
+//				list.erase(i);
+//				added = true;
+//				break;
+//			}
+//		}
+//		if(!added)
+//			listNotIn.push_back(actionState.first);
+//	}
+//	std::cout << "EXCEED: " << std::endl;
+//	for (auto a : list) {
+//		std::cout << a.act.act.count << " " << a.act.act.direction << " " << a.act.act.index << std::endl;
+//		std::cout << testcaseManager::printState( std::bitset<128U>(std::bitset<64>(a.state._2).to_string() + std::bitset<64>(a.state._1).to_string())) << std::endl;
+//	}
+//	std::cout << "NOT IN: " << std::endl;
+//	for (auto a : listNotIn) {
+//		std::cout << a.count << " " << a.direction << " " << a.index << std::endl;
+//	}
+//	std::cout << std::endl;
+//}
 
 //int main() {
 //	std::bitset<128U> bitsetState{ "00000001010010100101011010100001010010100000000000000000000000000000000000000000000000000000001010000101001010100101011010000101" };
