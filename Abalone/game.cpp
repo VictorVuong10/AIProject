@@ -53,14 +53,14 @@ const std::string game::INIT_STATES[4] = { "", STANDARD_STR, GERMAN_DAISY_STR, B
 
 game::game() : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{ true }, player1IsBlack{true},
-player1{ new automata{automata::h1} }, player2{ new automata{automata::h1} }
+player1{ new automata{automata::h2} }, player2{ new automata{automata::h2} }
 {
 	initAllEle();
 }
 
 game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}, player1IsBlack{ true },
-	player1{ new automata{automata::h1} }, player2{ new automata{automata::h2} }
+	player1{ new automata{automata::h2} }, player2{ new automata{automata::h2} }
 {
 	initAllEle();
 }
