@@ -468,10 +468,10 @@ int automata::h1(logic::bitState & state, bool isBlack, int& blackLost, int& whi
 		scoreMean = whiteLost * 100 - blackLost * 150;
 	}
 	else {
-		if (whiteLost == 6) {
+		if (blackLost == 6) {
 			return INT_MAX;
 		}
-		if (blackLost == 6) {
+		if (whiteLost == 6) {
 			return INT_MIN;
 		}
 		scoreMean = blackLost * 100 - whiteLost * 150;
