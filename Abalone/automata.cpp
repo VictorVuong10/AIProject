@@ -15,7 +15,6 @@ automata::~automata()
 
 logic::weightedActionState_old automata::getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft)
 {
-	std::cout << state.to_string() << std::endl;
 	threadPool.wait();
 	clock.restart();
 	counter = 0;
@@ -321,7 +320,7 @@ logic::weightedActionState automata::getBestMove(logic::bitState & state, bool i
 
 logic::weightedActionState automata::alphaBeta(logic::bitState & state, bool isBlack, unsigned int & moveLeft, int & timeLeft)
 {
-	auto depth = 2u;
+	auto depth = 3u;
 	int miliSec = clock.getElapsedTime().asMilliseconds();
 	int lastLayerUsed = 0;
 	logic::weightedActionState best;
@@ -490,13 +489,13 @@ int automata::h1(logic::bitState & state, bool isBlack, int& blackLost, int& whi
 			for (auto k = 0u; k < 6; ++k) {
 				auto adj = logic::MOVE_TABLE[i >> 1][k];
 				if (adj == -1) {
-					break;
+					continue;
 				}
-				if ((adj & 32 ? (bool)(state._2 & 1ull << ((adj & 31) << 1) + isBlack) : (bool)(state._1 & 1ull << (i << 1) + isBlack))) {
+				if ((adj & 32 ? (bool)(state._2 & 1ull << ((adj & 31) << 1) + isBlack) : (bool)(state._1 & 1ull << (adj << 1) + isBlack))) {
 					++same;
 					++adjacency;
 				}
-				if ((adj & 32 ? (bool)(state._2 & 1ull << ((adj & 31) << 1) + (isBlack ^ 1)) : (bool)(state._1 & 1ull << (i << 1) + (isBlack ^ 1)))) {
+				if ((adj & 32 ? (bool)(state._2 & 1ull << ((adj & 31) << 1) + (isBlack ^ 1)) : (bool)(state._1 & 1ull << (adj << 1) + (isBlack ^ 1)))) {
 					++diff;
 				}
 			}
@@ -515,7 +514,123 @@ int automata::h1(logic::bitState & state, bool isBlack, int& blackLost, int& whi
 	return (int)(thisMid * 1.1) - thatMid + (adjacency >> 2) + spyMean + hexMean + scoreMean;
 }
 
-int automata::h2(logic::bitState &, bool isBlack, int& blackLost, int& whiteLost)
+int automata::h2(logic::bitState & state, bool isBlack, int& blackLost, int& whiteLost)
 {
-	return 0;
+	//follow your heart
+	int scoreMean = 0;
+	if (isBlack) {
+		if (blackLost == 6) {
+			return INT_MIN;
+		}
+		if (whiteLost == 6) {
+			return INT_MAX;
+		}
+		scoreMean = whiteLost * 100 - blackLost * 150;
+	}
+	else {
+		if (whiteLost == 6) {
+			return INT_MAX;
+		}
+		if (blackLost == 6) {
+			return INT_MIN;
+		}
+		scoreMean = blackLost * 100 - whiteLost * 150;
+	}
+	int thisMid = 0;
+	int thatMid = 0;
+	int adjacency = 0;
+	int hex = 0;
+	int cutMean = 0;
+	int danger = 0;
+	int trap = 0;
+	for (auto i = 0; i < 122; i += 2) {
+		int slot = i & 64 ? state._2 >> (i & 63) & 3 : state._1 >> i & 3;
+		if (!slot) {
+			continue;
+		}
+		//10 black 01 + 01 = 10, 01 white, 00 + 01 = 01
+		if (slot == ((int)isBlack + 1)) {
+			int midScore = MIDDLE_H[i >> 1];
+			int same = 0;
+			int diff = 0;
+			auto k = 0u;
+			for (; k < 3; ++k) {
+				auto adj = logic::MOVE_TABLE[i >> 1][k];
+				if (adj == -1) {
+					continue;
+				}
+				int adjslot = adj & 32 ? state._2 >> ((adj & 31) << 1) & 3: state._1 >> (adj << 1) & 3;
+				if (!adjslot) {
+					continue;
+				}
+				if (adjslot == ((int)isBlack + 1)) {
+					++same;
+					++adjacency;
+				}
+				else {
+					++diff;
+					auto adjOpp = logic::COUNTER_DIRECTION[k];
+					if ((adjOpp & 32 ? (bool)(state._2 & 1ull << ((adjOpp & 31) << 1) + (isBlack ^ 1)) : (bool)(state._1 & 1ull << (adjOpp << 1) + (isBlack ^ 1)))) {
+						++cutMean;
+					}
+				}
+			}
+			for (; k < 6; ++k) {
+				auto adj = logic::MOVE_TABLE[i >> 1][k];
+				if (adj == -1) {
+					continue;
+				}
+				int adjslot = adj & 32 ? state._2 >> ((adj & 31) << 1) & 3 : state._1 >> (adj << 1) & 3;
+				if (!adjslot) {
+					continue;
+				}
+				if (adjslot == ((int)isBlack + 1)) {
+					++same;
+					++adjacency;
+				}
+				else {
+					++diff;
+				}
+			}
+			if (midScore < 3 && same < diff) {
+				danger += (4 - midScore);
+			}
+			if (same == 6) {
+				++hex;
+			}
+			thisMid += midScore;
+		} else {
+			int midScore = MIDDLE_H[i >> 1];
+			int same = 0;
+			int diff = 0;
+			for (auto k = 0u; k < 6; ++k) {
+				auto adj = logic::MOVE_TABLE[i >> 1][k];
+				if (adj == -1) {
+					continue;
+				}
+				int adjslot = adj & 32 ? state._2 >> ((adj & 31) << 1) & 3 : state._1 >> (adj << 1) & 3;
+				if (!adjslot) {
+					continue;
+				}
+				if (adjslot == ((int)isBlack + 1)) {
+					++diff;
+				}
+				else {
+					++same;
+				}
+			}
+			if (midScore < 4 && same < diff) {
+				trap += (4 - midScore);
+			}
+			thatMid += midScore;
+		}
+	}
+	//std::cout << "mid: " << thisMid << std::endl;
+	//std::cout << "that mid: " << thatMid << std::endl;
+	//std::cout << "adjacency: " << adjacency	<< std::endl;
+	//std::cout << "cut: " << cutMean << std::endl;
+	//std::cout << "hex: " << hex << std::endl;
+	//std::cout << "score: " << scoreMean << std::endl;
+	//confidence
+	return (int)(thisMid * 1.1) - thatMid + (adjacency >> 1) + hex + cutMean + trap - danger + scoreMean;
 }
