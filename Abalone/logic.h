@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <queue>
+#include <random>
 #include "board.h"
 
 //Black - 01, White - 10
@@ -250,6 +251,8 @@ public:
 
 	static constexpr int COUNTER_DIRECTION[6] = { 3, 4, 5, 0, 1, 2 };
 
+	static const action RANDOM_MOVES[3][4];
+
 	logic(const logic &) = delete;
 	void operator=(const logic &) = delete;
 
@@ -291,7 +294,7 @@ public:
 		return act.act.count == 1 ? inlineMove(state, act, isBlackTurn) : sideMove(state, act, isBlackTurn);
 	}
 
-
+	static std::bitset<128U> randomMove(std::bitset<128U>& state);
 	
 
 private:

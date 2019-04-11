@@ -60,7 +60,7 @@ player1{ new automata{automata::h1} }, player2{ new automata{automata::h1} }
 
 game::game(gui* ui) : player1IsHuman{ true }, player2IsHuman{ false }, state{ INIT_STATES[EMPTY] },
 	ui{ ui }, progress{ gameProgress::NOT_STARTED }, rman{ &resourceManager::instance }, storedSec{ 0 }, isBlackTurn{true}, player1IsBlack{ true },
-	player1{ new automata{automata::h2} }, player2{ new automata{automata::h1} }
+	player1{ new automata{automata::h1} }, player2{ new automata{automata::h2} }
 {
 	initAllEle();
 }
@@ -441,20 +441,14 @@ void game::startGame() {
 	turnTimer.restart();
 	std::cout << "Game START." << std::endl << std::endl;
 	if (!player1IsHuman || !player2IsHuman) {
-		/*if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && !player2IsHuman))) {
-			auto validMoves = logic::getAllValidMove(state, isBlackTurn);
-			std::random_device rand_dev;
-			std::mt19937 generator(rand_dev());
-			std::uniform_int_distribution<int>  distr(0, validMoves.size() - 1);
-			int randomState = distr(generator);
-			auto randomMove = validMoves[randomState];
-			nextState(randomMove.second);
+		if (movesMade == 0 && ((player1IsBlack && !player1IsHuman) || (!player1IsBlack && !player2IsHuman))) {
+			nextState(logic::randomMove(state));
 			automataMove();
 		}
 		else {
 			automataMove();
-		}*/
-		automataMove();
+		}
+		//automataMove();
 	}
 }
 
@@ -502,6 +496,8 @@ void game::stopGame()
 
 void game::undoGame() {
 	if (progress != gameProgress::IN_PROGRESS || history.size() < 2)
+		return;
+	if ((!player1IsHuman || !player2IsHuman) && history.size() < 3)
 		return;
 	history.pop();
 	movesMade -= 1;

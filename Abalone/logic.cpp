@@ -1,14 +1,50 @@
 #include "logic.h"
 
-bool isWhitePiece(int index, std::bitset<128U>& state) {
-	return state[index << 1];
-}
-
-bool isBlackPiece(int index, std::bitset<128U>& state) {
-	return state[(index << 1) + 1];
-}
+const logic::action logic::RANDOM_MOVES[3][4] = {
+	//standard
+	{
+		{1, 56, 2},
+		{1, 57, 2},
+		{1, 59, 1},
+		{1, 60, 1}
+	},
+	//german
+	{
+		{1, 9, 5},
+		{1, 17, 5},
+		{1, 51, 2},
+		{1, 43, 2}
+	},
+	//belgian
+	{
+		{1, 3, 5},
+		{1, 4, 5},
+		{1, 56, 2},
+		{1, 57, 2}
+	}
+};
 
 #pragma region oldMoveFuncs
+
+std::bitset<128U> logic::randomMove(std::bitset<128U>& state)
+{
+	std::random_device rand_dev;
+	std::mt19937 generator(rand_dev());
+	std::uniform_int_distribution<int> distr(0, 3);
+	int randomState = distr(generator);
+	if (state == std::bitset<128U>{"00000010101010101010101010100000101010000000000000000000000000000000000000000000000000000000000001010100000101010101010101010101"}) {
+		return move(state, RANDOM_MOVES[0][randomState], true);
+	}
+	else if (state == std::bitset<128U>{"00000000000000000101000010100101010010101000010100001010000000000000000000000010100000010100101010000101011010000001010000000000"}) {
+		return move(state, RANDOM_MOVES[1][randomState], true);
+	} 
+	else if (state == std::bitset<128U>{"00000001010010100101011010100001010010100000000000000000000000000000000000000000000000000000001010000101001010100101011010000101"}) {
+		return move(state, RANDOM_MOVES[2][randomState], true);
+	} 
+	else {
+		return state;
+	}
+}
 
 std::bitset<128U>& logic::sideMove(std::bitset<128U>& state, action& act, bool isBlackTurn) {
 	int marbleCount = act.count;
