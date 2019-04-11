@@ -7,11 +7,19 @@ automata::automata() : threadPool{ threadNumber }, h{ automata::basicHeuristic }
 
 automata::automata(heuristic_old h) : h{ h }, hn{ automata::h1 }, threadPool{ threadNumber }{}
 
-automata::automata(heuristic h) : h{ automata::basicHeuristic }, hn{ h }, threadPool{ threadNumber }{}
+automata::automata(heuristic h) : h{ automata::basicHeuristic }, hn{ h }, threadPool{ threadNumber }{
+	transTable = new std::unordered_map<logic::bitState, tableEntry, bitStateHash>{ 1 << 10 };
+	for (int i = 0; i < threadNumber; ++i) {
+		writeQueues.emplace(new writeQueue{});
+	}
+}
 
 automata::~automata()
 {
+	delete transTable;
 }
+
+#pragma region old
 
 logic::weightedActionState_old automata::getBestMove(std::bitset<128U>& state, bool isBlack, unsigned int moveLeft, int timeLeft)
 {
@@ -307,10 +315,13 @@ int automata::basicHeuristic(std::bitset<128U>& state, bool isBlack)
 	return (int)(thisMid * 1.1) - thatMid + (adjacency >> 2) + spyMean + hexMean + scoreMean;
 }
 
+#pragma endregion
+
 logic::weightedActionState automata::getBestMove(logic::bitState & state, bool isBlack, unsigned int moveLeft, int timeLeft)
 {
 	threadPool.wait();
 	clock.restart();
+	hitCounter = 0;
 	counter = 0;
 	if (moveLeft == 0) moveLeft = 4;
 	if (timeLeft == 0 || timeLeft > 100) timeLeft = 5;
@@ -339,6 +350,8 @@ logic::weightedActionState automata::alphaBeta(logic::bitState & state, bool isB
 		std::cout << "Depth: " << depth << std::endl;
 		std::cout << "Time used: " << lastLayerUsed << std::endl;
 		std::cout << "Searched state: " << counter << std::endl;
+		std::cout << "table hit: " << hitCounter << std::endl;
+		std::cout << "table size: " << transTable->size() << std::endl;
 		std::cout << "bestV: " << bestV << std::endl;
 		std::cout << "Best Action: " << best.act.act.count << " " << best.act.act.direction << " " << best.act.act.index << std::endl;
 
@@ -349,6 +362,15 @@ logic::weightedActionState automata::alphaBeta(logic::bitState & state, bool isB
 
 automata::maxTopReturn automata::maxTop(std::multiset<logic::weightedActionState, std::greater<logic::weightedActionState>>& actionStates, logic::bitState & state, bool isBlack, unsigned int depth, unsigned int moveLeft, int & timeLeft, int alpha, int beta)
 {
+	if (transTable->find(state) != transTable->end()) {
+		auto entry = (*transTable)[state];
+		if (entry.depth >= depth && entry.flag == 1) {
+			logic::weightedActionState as{};
+			as.state = state;
+			return {as, entry.val, true };
+		}
+	}
+
 	int bestV = INT_MIN;
 	logic::weightedActionState bestAs;
 	auto iter = actionStates.begin();
@@ -359,15 +381,19 @@ automata::maxTopReturn automata::maxTop(std::multiset<logic::weightedActionState
 		--threadRemain;
 		threadPool.schedule([this, iter, &bestV, &bestAs, &completedBranch, &threadRemain, isBlack, depth, moveLeft, &alpha, beta]() {
 			logic::bitState oneState;
+			writeQueue* curQueue;
 			{
 				std::unique_lock<std::mutex> lck{ mtQ };
 				if (returned) {
 					return;
 				}
 				oneState = iter->state;
+				curQueue = writeQueues.front();
+				writeQueues.pop();
 			}
-			int curV = minValue(oneState, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
+			int curV = minValue(curQueue, oneState, !isBlack, depth - 1, moveLeft - 1, alpha, beta);
 			std::unique_lock<std::mutex> lck{ mtQ };
+			writeQueues.push(curQueue);
 			if (returned)
 				return;
 
@@ -404,7 +430,21 @@ automata::maxTopReturn automata::maxTop(std::multiset<logic::weightedActionState
 		return { bestAs, bestV, false };
 	}
 
+	threadPool.schedule([this](){
+		writeAll();
+		cv.notify_one();
+	});
 
+	//wait for writing to table complete, if timeout then just return anyway.
+	std::unique_lock<std::mutex> writeLck{ write_blocker };
+	if (cv.wait_for(writeLck, std::chrono::milliseconds{ timeLeft - clock.getElapsedTime().asMilliseconds() }) == std::cv_status::timeout) {
+		std::unique_lock<std::mutex> lck{ mtQ };
+		std::cout << "<table writing timeout>" << std::endl;
+		returned = true;
+		return { bestAs, bestV, true };
+	}
+
+	(*transTable)[state] = { 1, depth, bestV };
 	std::unique_lock<std::mutex> lck{ mtQ };
 	std::cout << "<completed>" << std::endl;
 	returned = true;
@@ -412,46 +452,94 @@ automata::maxTopReturn automata::maxTop(std::multiset<logic::weightedActionState
 	return { bestAs, bestV, true };
 }
 
-int automata::maxValue(logic::bitState & state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta)
+int automata::maxValue(writeQueue * curQueue, logic::bitState & state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta)
 {
 	if (returned)
 		return INT_MAX;
+
+	if (transTable->find(state) != transTable->end()) {
+		auto entry = (*transTable)[state];
+		if (entry.depth >= depth) {
+			if (entry.flag == 1) {
+				++hitCounter;
+				return entry.val;
+			}
+			if (entry.flag == 3 && entry.val >= beta) {
+				++hitCounter;
+				return entry.val;
+			}
+		}
+	}
+
 	++counter;
+	char flag = 2;
 	auto blackLoss = (int)(state._2 >> 58 & 7);
 	auto whiteLoss = (int)(state._2 >> 61 & 7);
 	if (depth < 1 || moveLeft < 1 || whiteLoss > 5 || blackLoss > 5) {
-		return hn(state, isBlack, blackLoss, whiteLoss);
+		int val = hn(state, isBlack, blackLoss, whiteLoss);
+		addWriteTask(curQueue, state, 1, depth, val);
+		return val;
 	}
 	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MIN;
 	for (auto as : actionStates) {
-		bestV = std::max(bestV, minValue(as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
-		if (bestV >= beta)
+		bestV = std::max(bestV, minValue(curQueue, as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
+		if (bestV >= beta) {
+			addWriteTask(curQueue, state, 3, depth, beta);
 			return bestV;
-		alpha = std::max(alpha, bestV);
+		}
+		if (bestV > alpha) {
+			flag = 1;
+			alpha = bestV;
+		}
 	}
+	addWriteTask(curQueue, state, flag, depth, alpha);
+
 	return bestV;
 }
 
-int automata::minValue(logic::bitState & state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta)
+int automata::minValue(writeQueue * curQueue, logic::bitState & state, bool isBlack, unsigned int depth, unsigned int moveLeft, int alpha, int beta)
 {
 	if (returned)
 		return INT_MIN;
+
+	if (transTable->find(state) != transTable->end()) {
+		auto entry = (*transTable)[state];
+		if (entry.depth >= depth) {
+			if (entry.flag == 1) {
+				++hitCounter;
+				return entry.val;
+			}
+			if (entry.flag == 2 && entry.val <= alpha) {
+				++hitCounter;
+				return entry.val;
+			}
+		}
+	}
+
 	++counter;
+	char flag = 3;
 	auto blackLoss = (int)(state._2 >> 58 & 7);
 	auto whiteLoss = (int)(state._2 >> 61 & 7);
 	if (depth < 1 || moveLeft < 1 || whiteLoss > 5 || blackLoss > 5) {
-		return hn(state, !isBlack, blackLoss, whiteLoss);
+		int val = hn(state, !isBlack, blackLoss, whiteLoss);
+		addWriteTask(curQueue, state, 1, depth, val);
+		return val;
 	}
 	auto actionStates = logic::getAllValidMoveOrdered(state, isBlack);
 	int bestV = INT_MAX;
 	for (auto as : actionStates) {
-		bestV = std::min(bestV, maxValue(as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
-		if (bestV <= alpha)
+		bestV = std::min(bestV, maxValue(curQueue, as.state, !isBlack, depth - 1, moveLeft - 1, alpha, beta));
+		if (bestV <= alpha) {
+			addWriteTask(curQueue, state, 2, depth, alpha);
 			return bestV;
-		beta = std::min(beta, bestV);
+		}
+		if (bestV < beta) {
+			flag = 1;
+			beta = bestV;
+		}
 	}
-
+	addWriteTask(curQueue, state, flag, depth, beta);
 	return bestV;
 }
 
@@ -634,3 +722,32 @@ int automata::h2(logic::bitState & state, bool isBlack, int& blackLost, int& whi
 	//confidence
 	return (int)(thisMid * 1.1) - thatMid + (adjacency >> 1) + hex + cutMean + trap - danger + scoreMean;
 }
+
+void automata::writeAll() {
+	for (auto i = 0u; i < writeQueues.size(); ++i) {
+		auto q = writeQueues.front();
+		writeQueues.pop();
+		while (!q->q.empty()) {
+			q->q.front()();
+			q->q.pop();
+		}
+		writeQueues.push(q);
+	}
+}
+
+void automata::addWriteTask(writeQueue* curQueue, logic::bitState & state, char flag, unsigned int& depth, int& val) {
+	if (transTable->size() >= transTable->max_size()) {
+		std::cout << "table reached max size: " << transTable->size() << std::endl;
+		return;
+	}
+	curQueue->q.emplace([this, state, flag, depth, val] {
+		if (transTable->size() >= transTable->max_size()) {
+			std::cout << "table reached max size: " << transTable->size() << std::endl;
+			return;
+		}
+		//std::cout << transTable->size() << " : " << transTable->max_size() << std::endl;
+		(*transTable)[state] = { flag, depth, val };
+		//std::cout << "done" << std::endl;
+	});
+}
+

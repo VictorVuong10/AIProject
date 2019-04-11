@@ -32,6 +32,9 @@ public:
 			_1 = bs._1;
 			return *this;
 		}*/
+		bool operator==(const bitState& bs) const {
+			return _1 == bs._1 && _2 == bs._2;
+		}
 	};
 
 	struct action {
